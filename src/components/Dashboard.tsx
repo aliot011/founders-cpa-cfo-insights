@@ -18,7 +18,7 @@ type TabId = 'summary' | 'detail' | 'variance' | 'accounts';
 const TABS: { id: TabId; label: string }[] = [
   { id: 'summary', label: 'Summary' },
   { id: 'detail', label: 'Detail' },
-  { id: 'variance', label: 'Variance' },
+  { id: 'variance', label: 'Flux' },
   { id: 'accounts', label: 'Accounts' },
 ];
 

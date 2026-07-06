@@ -59,7 +59,7 @@ export function VarianceAnalysis({ entries, accountMap, months }: Props) {
   return (
     <div className="panel">
       <div className="panel-head">
-        <h3>Variance analysis</h3>
+        <h3>Flux Analysis</h3>
         <div className="period-picker">
           <select className="pp-gran" value={gran} onChange={(e) => setGran(e.target.value as Granularity)}>
             {(Object.keys(GRANULARITY) as Granularity[]).map((g) => (
