@@ -28,6 +28,13 @@ export function formatMonthShort(month: string): string {
   return d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
 }
 
+/** Shift a YYYY-MM month key by a number of months (can be negative). */
+export function shiftMonth(month: string, deltaMonths: number): string {
+  const [y, m] = month.split('-').map(Number);
+  const d = new Date(y, m - 1 + deltaMonths, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
 /** Month-over-month change between two numbers. */
 export interface Delta {
   abs: number;

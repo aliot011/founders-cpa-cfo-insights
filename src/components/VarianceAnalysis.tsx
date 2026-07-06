@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { AccountMap, LedgerEntry } from '../types';
-import { computeVariance, type AccountVariance, type Line, type Period } from '../lib/variance';
-import { formatCurrency, formatMonth, formatMonthShort, formatPercent } from '../lib/format';
+import { computeVariance, type PnlLine, type Period } from '../lib/variance';
+import { formatCurrency, formatMonth, formatPercent, shiftMonth } from '../lib/format';
 
 interface Props {
   entries: LedgerEntry[];
@@ -9,59 +9,81 @@ interface Props {
   months: string[]; // sorted YYYY-MM
 }
 
-function periodLabel(p: Period): string {
-  if (p.start === p.end) return formatMonth(p.start);
-  return `${formatMonthShort(p.start)} – ${formatMonthShort(p.end)}`;
+type Granularity = 'month' | 'quarter' | 'year';
+
+const GRANULARITY: Record<Granularity, { label: string; span: number; abbr: string }> = {
+  month: { label: 'Month ending', span: 1, abbr: '' },
+  quarter: { label: 'Quarter ending', span: 3, abbr: 'QE ' },
+  year: { label: 'Year ending', span: 12, abbr: 'YE ' },
+};
+
+/** Build the inclusive month range for a period that ends at `end`. */
+function periodFor(end: string, g: Granularity): Period {
+  return { start: shiftMonth(end, -(GRANULARITY[g].span - 1)), end };
 }
 
-/** A signed $ change cell + a % change cell, coloured by direction. */
-function ChangeCells({ change, pctChange }: { change: number; pctChange: number | null }) {
-  const cls = change === 0 ? 'muted' : change > 0 ? 'pos' : 'neg';
-  const dollars = change === 0 ? '—' : `${change > 0 ? '+' : ''}${formatCurrency(change)}`;
-  const percent =
-    pctChange != null
-      ? `${pctChange > 0 ? '+' : ''}${formatPercent(pctChange)}`
-      : change === 0
-        ? '—'
-        : 'new';
-  return (
-    <>
-      <td className={`num ${cls}`}>{dollars}</td>
-      <td className={`num ${cls}`}>{percent}</td>
-    </>
-  );
+function periodLabel(end: string, g: Granularity): string {
+  return `${GRANULARITY[g].abbr}${formatMonth(end)}`;
+}
+
+/** Signed currency with an explicit + and a dash for zero. */
+function signed(n: number): string {
+  if (!isFinite(n)) return '—';
+  if (n === 0) return '—';
+  return `${n > 0 ? '+' : ''}${formatCurrency(n)}`;
+}
+
+function signClass(n: number | null): string {
+  if (n == null || !isFinite(n) || n === 0) return 'muted';
+  return n > 0 ? 'pos' : 'neg';
 }
 
 export function VarianceAnalysis({ entries, accountMap, months }: Props) {
   const last = months[months.length - 1];
   const prev = months.length > 1 ? months[months.length - 2] : last;
-  const [p1, setP1] = useState<Period>({ start: prev, end: prev });
-  const [p2, setP2] = useState<Period>({ start: last, end: last });
+  const [gran, setGran] = useState<Granularity>('month');
+  const [p1End, setP1End] = useState(prev);
+  const [p2End, setP2End] = useState(last);
+
+  const p1 = periodFor(p1End, gran);
+  const p2 = periodFor(p2End, gran);
 
   const report = useMemo(
     () => computeVariance(entries, accountMap, p1, p2),
-    [entries, accountMap, p1, p2],
+    [entries, accountMap, p1.start, p1.end, p2.start, p2.end],
   );
 
-  const h1 = periodLabel(p1);
-  const h2 = periodLabel(p2);
-
-  const groupByCat = new Map(report.pnlGroups.map((g) => [g.category, g]));
+  const h1 = periodLabel(p1End, gran);
+  const h2 = periodLabel(p2End, gran);
 
   return (
     <div className="panel">
       <div className="panel-head">
         <h3>Variance analysis</h3>
-        <PeriodPicker months={months} p1={p1} p2={p2} setP1={setP1} setP2={setP2} />
+        <div className="period-picker">
+          <select className="pp-gran" value={gran} onChange={(e) => setGran(e.target.value as Granularity)}>
+            {(Object.keys(GRANULARITY) as Granularity[]).map((g) => (
+              <option key={g} value={g}>{GRANULARITY[g].label}</option>
+            ))}
+          </select>
+          <select value={p1End} onChange={(e) => setP1End(e.target.value)}>
+            {months.map((m) => <option key={m} value={m}>{formatMonth(m)}</option>)}
+          </select>
+          <span className="pp-vs">vs</span>
+          <select value={p2End} onChange={(e) => setP2End(e.target.value)}>
+            {months.map((m) => <option key={m} value={m}>{formatMonth(m)}</option>)}
+          </select>
+        </div>
       </div>
+
       <div className="panel-body">
-        {/* ---- P&L ---- */}
+        {/* ---- P&L totals ---- */}
         <h4 className="var-subhead">Profit &amp; Loss</h4>
         <div className="table-scroll">
           <table className="metrics variance num">
             <thead>
               <tr>
-                <th className="metric-name">Account</th>
+                <th className="metric-name">Line item</th>
                 <th>{h1}</th>
                 <th>{h2}</th>
                 <th>$ Change</th>
@@ -69,14 +91,9 @@ export function VarianceAnalysis({ entries, accountMap, months }: Props) {
               </tr>
             </thead>
             <tbody>
-              {renderGroup('revenue')}
-              {renderGroup('cogs')}
-              {renderSummary(report.summaries.grossProfit)}
-              {renderGroup('opex')}
-              {renderSummary(report.summaries.operatingProfit)}
-              {renderGroup('other_income')}
-              {renderGroup('other_expense')}
-              {renderSummary(report.summaries.netIncome, true)}
+              {report.pnlLines.map((l) => (
+                <PnlRow key={l.key} line={l} />
+              ))}
             </tbody>
           </table>
         </div>
@@ -108,126 +125,68 @@ export function VarianceAnalysis({ entries, accountMap, months }: Props) {
                       <td className="metric-name">{r.account}</td>
                       <td className="num">{formatCurrency(r.p1)}</td>
                       <td className="num">{formatCurrency(r.p2)}</td>
-                      <ChangeCells change={r.change} pctChange={r.pctChange} />
-                      <td className={`num ${cashImpactClass(r)}`}>{formatCashImpact(r)}</td>
+                      <td className={`num ${signClass(r.change)}`}>{signed(r.change)}</td>
+                      <td className={`num ${signClass(r.change)}`}>{pctText(r.pctChange, r.change)}</td>
+                      <td className={`num ${signClass(r.cashImpact)}`}>{signed(r.cashImpact ?? 0)}</td>
                     </tr>
                   ))}
                   <tr className="var-summary">
                     <td className="metric-name">Change in cash (actual)</td>
-                    <td className="num muted" colSpan={4}></td>
-                    <td className="num">{signed(report.cashActualChange)}</td>
+                    <td className="num" colSpan={4}></td>
+                    <td className={`num ${signClass(report.cashActualChange)}`}>{signed(report.cashActualChange)}</td>
                   </tr>
                   <tr className="var-summary">
-                    <td className="metric-name">Net cash impact — non-cash B/S accounts</td>
-                    <td className="num muted" colSpan={4}></td>
-                    <td className="num">{signed(report.bsCashImpactTotal)}</td>
+                    <td className="metric-name">Net cash impact — non-cash B/S</td>
+                    <td className="num" colSpan={4}></td>
+                    <td className={`num ${signClass(report.bsCashImpactTotal)}`}>{signed(report.bsCashImpactTotal)}</td>
                   </tr>
                 </tbody>
               </table>
             </div>
             <p className="var-caption">
               <strong>Cash Impact</strong> uses the indirect method: an increase in an asset uses cash
-              (negative), while an increase in a liability or equity account is a source of cash (positive).
-              When {h2} immediately follows {h1}, Net Income ({formatCurrency(report.summaries.netIncome.p2)}) +
-              net B/S cash impact ({signed(report.bsCashImpactTotal)}) reconciles to the change in cash (
-              {signed(report.cashActualChange)}). Balance columns are cumulative within the loaded ledger, so
-              treat them as movements from the start of your data if the export omits opening balances.
+              (negative); an increase in a liability or equity account is a source of cash (positive). When{' '}
+              {h2} immediately follows {h1}, Net Income ({formatCurrency(report.netIncomeP2)}) + net B/S cash
+              impact ({signed(report.bsCashImpactTotal)}) reconciles to the change in cash (
+              {signed(report.cashActualChange)}). Balance columns are cumulative within the loaded ledger.
             </p>
           </>
         )}
       </div>
     </div>
   );
-
-  function renderGroup(category: AccountVariance['category']) {
-    const g = groupByCat.get(category);
-    if (!g) return null;
-    return (
-      <>
-        <tr className="var-group">
-          <td className="metric-name" colSpan={5}>{g.label}</td>
-        </tr>
-        {g.rows.map((r) => (
-          <tr key={r.account}>
-            <td className="metric-name var-indent">{r.account}</td>
-            <td className="num">{formatCurrency(r.p1)}</td>
-            <td className="num">{formatCurrency(r.p2)}</td>
-            <ChangeCells change={r.change} pctChange={r.pctChange} />
-          </tr>
-        ))}
-        <tr className="var-subtotal">
-          <td className="metric-name">Total {g.label}</td>
-          <td className="num">{formatCurrency(g.subtotal.p1)}</td>
-          <td className="num">{formatCurrency(g.subtotal.p2)}</td>
-          <ChangeCells change={g.subtotal.change} pctChange={g.subtotal.pctChange} />
-        </tr>
-      </>
-    );
-  }
-
-  function renderSummary(l: Line, strong = false) {
-    return (
-      <tr className={strong ? 'var-summary var-net' : 'var-summary'}>
-        <td className="metric-name">{l.label}</td>
-        <td className="num">{formatCurrency(l.p1)}</td>
-        <td className="num">{formatCurrency(l.p2)}</td>
-        <ChangeCells change={l.change} pctChange={l.pctChange} />
-      </tr>
-    );
-  }
 }
 
-function signed(n: number): string {
-  if (n === 0) return '—';
-  return `${n > 0 ? '+' : ''}${formatCurrency(n)}`;
-}
+function PnlRow({ line }: { line: PnlLine }) {
+  const rowClass = line.emphasis ? 'var-summary' : line.sub ? 'var-sub' : '';
+  const isPct = line.format === 'percent';
 
-function formatCashImpact(r: AccountVariance): string {
-  if (r.cashImpact == null) return '';
-  return signed(r.cashImpact);
-}
+  const v1 = isPct ? formatPercent(line.p1) : formatCurrency(line.p1);
+  const v2 = isPct ? formatPercent(line.p2) : formatCurrency(line.p2);
 
-function cashImpactClass(r: AccountVariance): string {
-  if (r.cashImpact == null || r.cashImpact === 0) return 'muted';
-  return r.cashImpact > 0 ? 'pos' : 'neg';
-}
+  // For margin rows the "$ Change" column shows percentage-point movement.
+  const changeText = isPct ? ptsText(line.change) : signed(line.change);
+  const changeCls = signClass(line.change);
+  const pctCls = signClass(line.pctChange);
 
-function PeriodPicker({
-  months, p1, p2, setP1, setP2,
-}: {
-  months: string[];
-  p1: Period;
-  p2: Period;
-  setP1: (p: Period) => void;
-  setP2: (p: Period) => void;
-}) {
-  const opts = months.map((m) => (
-    <option key={m} value={m}>{formatMonthShort(m)}</option>
-  ));
-  // Keep start <= end within each period.
-  const upd = (
-    setter: (p: Period) => void,
-    cur: Period,
-    field: 'start' | 'end',
-    value: string,
-  ) => {
-    const next = { ...cur, [field]: value };
-    if (next.start > next.end) {
-      if (field === 'start') next.end = value;
-      else next.start = value;
-    }
-    setter(next);
-  };
   return (
-    <div className="period-picker">
-      <span className="pp-label">Compare</span>
-      <select value={p1.start} onChange={(e) => upd(setP1, p1, 'start', e.target.value)}>{opts}</select>
-      <span className="pp-dash">to</span>
-      <select value={p1.end} onChange={(e) => upd(setP1, p1, 'end', e.target.value)}>{opts}</select>
-      <span className="pp-vs">vs</span>
-      <select value={p2.start} onChange={(e) => upd(setP2, p2, 'start', e.target.value)}>{opts}</select>
-      <span className="pp-dash">to</span>
-      <select value={p2.end} onChange={(e) => upd(setP2, p2, 'end', e.target.value)}>{opts}</select>
-    </div>
+    <tr className={rowClass}>
+      <td className={`metric-name${line.sub ? ' var-indent' : ''}`}>{line.label}</td>
+      <td className="num">{v1}</td>
+      <td className="num">{v2}</td>
+      <td className={`num ${changeCls}`}>{changeText}</td>
+      <td className={`num ${pctCls}`}>{pctText(line.pctChange, line.change)}</td>
+    </tr>
   );
+}
+
+function pctText(pctChange: number | null, change: number): string {
+  if (pctChange != null) return `${pctChange > 0 ? '+' : ''}${formatPercent(pctChange)}`;
+  if (!isFinite(change) || change === 0) return '—';
+  return 'new';
+}
+
+function ptsText(change: number): string {
+  if (!isFinite(change) || change === 0) return '—';
+  return `${change > 0 ? '+' : ''}${(change * 100).toFixed(1)} pts`;
 }
