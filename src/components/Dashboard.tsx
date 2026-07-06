@@ -65,6 +65,10 @@ export function Dashboard({ dataset, onMapChange }: Props) {
             </div>
           )}
 
+          <div className="section">
+            <Charts metrics={metrics} />
+          </div>
+
           <div className="section-head">
             <div>
               <h2>Latest month</h2>
@@ -75,10 +79,6 @@ export function Dashboard({ dataset, onMapChange }: Props) {
           </div>
           <div className="section">
             <KpiCards metrics={metrics} />
-          </div>
-
-          <div className="section">
-            <Charts metrics={metrics} />
           </div>
         </>
       )}
