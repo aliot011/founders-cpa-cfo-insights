@@ -393,6 +393,89 @@ table.mapping select {
   margin-bottom: 22px;
 }
 
+/* ---- Variance analysis ----------------------------------------------- */
+.var-subhead {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  margin: 0 0 10px;
+}
+table.variance td.metric-name.var-indent {
+  padding-left: 24px;
+  font-weight: 500;
+  color: var(--ink-2);
+}
+table.variance .var-group td {
+  background: #f4f7f5;
+  font-weight: 700;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  padding-top: 12px;
+}
+table.variance .var-group td.metric-name {
+  background: #f4f7f5;
+}
+table.variance .var-subtotal td {
+  border-top: 1px solid var(--line-strong);
+  font-weight: 600;
+}
+table.variance .var-summary td {
+  background: #f0f5f2;
+  font-weight: 700;
+  border-top: 1px solid var(--line-strong);
+  border-bottom: 1px solid var(--line-strong);
+}
+table.variance .var-summary td.metric-name {
+  background: #f0f5f2;
+}
+table.variance .var-net td {
+  background: var(--accent-soft);
+  font-size: 14px;
+}
+table.variance .var-net td.metric-name {
+  background: var(--accent-soft);
+  color: var(--accent-dark);
+}
+.var-caption {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 14px 2px 0;
+}
+
+.period-picker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 12px;
+}
+.period-picker select {
+  font-family: inherit;
+  font-size: 12px;
+  padding: 4px 6px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--ink);
+}
+.pp-label {
+  color: var(--muted);
+  font-weight: 600;
+}
+.pp-dash {
+  color: var(--muted);
+}
+.pp-vs {
+  color: var(--accent-dark);
+  font-weight: 700;
+  padding: 0 4px;
+}
+
 details.collapse > summary {
   cursor: pointer;
   list-style: none;

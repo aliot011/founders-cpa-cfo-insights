@@ -1,36 +1,41 @@
-import type { AccountMap, Category, LedgerEntry, MonthlyMetrics } from '../types';
+import { ALL_CATEGORIES, type AccountMap, type Category, type LedgerEntry, type MonthlyMetrics } from '../types';
+
+/** A zeroed record with every category as a key. */
+export function zeroByCategory(): Record<Category, number> {
+  const rec = {} as Record<Category, number>;
+  for (const cat of ALL_CATEGORIES) rec[cat] = 0;
+  return rec;
+}
+
+/**
+ * Per-category display multiplier (+1 or −1).
+ *
+ * Entries are stored debit-positive, but QuickBooks single "Amount" exports
+ * don't always follow that convention. We flip each category so its aggregate
+ * comes out as a positive, natural magnitude: revenue/expenses positive, assets
+ * positive, liabilities/equity shown as positive (credit) balances. This makes
+ * both P&L arithmetic and the balance-sheet variance / cash-impact signs work
+ * regardless of the export's sign convention.
+ *
+ * Cash is pinned to +1 so a genuinely overdrawn balance is not flipped.
+ */
+export function computeCategorySigns(entries: LedgerEntry[], accountMap: AccountMap): Record<Category, number> {
+  const grand = zeroByCategory();
+  for (const e of entries) grand[accountMap[e.account] ?? 'ignore'] += e.amount;
+
+  const mult = {} as Record<Category, number>;
+  for (const cat of ALL_CATEGORIES) mult[cat] = grand[cat] < 0 ? -1 : 1;
+  mult.cash = 1;
+  mult.ignore = 1;
+  return mult;
+}
 
 /**
  * Turn normalized ledger entries + an account->category map into a sorted
  * series of monthly metrics.
- *
- * Sign handling: entries are stored debit-positive, but QuickBooks single
- * "Amount" exports don't always follow that convention for income accounts.
- * We auto-detect a per-category multiplier so that P&L magnitudes come out
- * positive (revenue and expenses are, in aggregate, positive numbers), then
- * apply standard P&L arithmetic on those magnitudes.
  */
 export function computeMetrics(entries: LedgerEntry[], accountMap: AccountMap): MonthlyMetrics[] {
-  // Grand totals per category, for sign detection.
-  const grand: Record<Category, number> = {
-    revenue: 0, cogs: 0, opex: 0, other_income: 0, other_expense: 0, cash: 0, ignore: 0,
-  };
-  for (const e of entries) {
-    const cat = accountMap[e.account] ?? 'ignore';
-    grand[cat] += e.amount;
-  }
-
-  const sign = (cat: Category): number => (grand[cat] < 0 ? -1 : 1);
-  // P&L categories we normalize to positive magnitudes.
-  const mult: Record<Category, number> = {
-    revenue: sign('revenue'),
-    cogs: sign('cogs'),
-    opex: sign('opex'),
-    other_income: sign('other_income'),
-    other_expense: sign('other_expense'),
-    cash: 1, // balances stay debit-positive
-    ignore: 1,
-  };
+  const mult = computeCategorySigns(entries, accountMap);
 
   // Bucket sums per month.
   const byMonth = new Map<string, Record<Category, number>>();
@@ -38,7 +43,7 @@ export function computeMetrics(entries: LedgerEntry[], accountMap: AccountMap): 
     const cat = accountMap[e.account] ?? 'ignore';
     let bucket = byMonth.get(e.month);
     if (!bucket) {
-      bucket = { revenue: 0, cogs: 0, opex: 0, other_income: 0, other_expense: 0, cash: 0, ignore: 0 };
+      bucket = zeroByCategory();
       byMonth.set(e.month, bucket);
     }
     bucket[cat] += e.amount;

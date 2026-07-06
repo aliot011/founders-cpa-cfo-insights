@@ -9,7 +9,8 @@ interface Props {
 }
 
 const CATEGORY_ORDER: Category[] = [
-  'revenue', 'cogs', 'opex', 'other_income', 'other_expense', 'cash', 'ignore',
+  'revenue', 'cogs', 'opex', 'other_income', 'other_expense',
+  'cash', 'asset', 'liability_equity', 'ignore',
 ];
 
 const CATEGORY_COLORS: Record<Category, { bg: string; fg: string }> = {
@@ -19,6 +20,8 @@ const CATEGORY_COLORS: Record<Category, { bg: string; fg: string }> = {
   other_income: { bg: '#e7f0fb', fg: '#274f9c' },
   other_expense: { bg: '#f1e8fb', fg: '#5a3a9c' },
   cash: { bg: '#e4f4f2', fg: '#0b5147' },
+  asset: { bg: '#e9f6ee', fg: '#1f6b3b' },
+  liability_equity: { bg: '#fdf0e6', fg: '#8a4a12' },
   ignore: { bg: '#eef1ef', fg: '#6b7a74' },
 };
 

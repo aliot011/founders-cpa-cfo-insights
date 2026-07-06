@@ -6,6 +6,7 @@ import { KpiCards } from './KpiCards';
 import { MetricsTable } from './MetricsTable';
 import { Charts } from './Charts';
 import { AccountMapping } from './AccountMapping';
+import { VarianceAnalysis } from './VarianceAnalysis';
 
 interface Props {
   dataset: Dataset;
@@ -18,6 +19,7 @@ export function Dashboard({ dataset, onMapChange }: Props) {
     [dataset.entries, dataset.accountMap],
   );
 
+  const months = useMemo(() => metrics.map((m) => m.month), [metrics]);
   const hasRevenue = metrics.some((m) => m.revenue !== 0);
   const range =
     metrics.length > 0
@@ -62,6 +64,16 @@ export function Dashboard({ dataset, onMapChange }: Props) {
         </div>
         <MetricsTable metrics={metrics} />
       </div>
+
+      {months.length > 0 && (
+        <div className="section">
+          <div className="section-head">
+            <h2>Variance</h2>
+            <span className="hint">Compare any two periods · P&amp;L and Balance Sheet</span>
+          </div>
+          <VarianceAnalysis entries={dataset.entries} accountMap={dataset.accountMap} months={months} />
+        </div>
+      )}
 
       <div className="section">
         <AccountMapping

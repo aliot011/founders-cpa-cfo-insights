@@ -1,0 +1,33 @@
+Founders Test Co,,,,,,,,
+General Ledger,,,,,,,,
+,Date,Transaction Type,Num,Name,Memo/Description,Split,Amount,Balance
+1000 Checking,,,,,,,,
+,01/10/2026,Payment,,Acme,Customer payment,1200 Accounts Receivable,4000.00,4000.00
+,01/20/2026,Check,,Staff,Payroll,6000 Payroll Expense,-1500.00,2500.00
+,02/10/2026,Payment,,Beta,Customer payment,1200 Accounts Receivable,7000.00,9500.00
+,02/15/2026,Bill Payment,,Sub,Pay vendor,2000 Accounts Payable,-2000.00,7500.00
+,02/20/2026,Check,,Staff,Payroll,6000 Payroll Expense,-1500.00,6000.00
+Total for 1000 Checking,,,,,,,,6000.00
+1200 Accounts Receivable,,,,,,,,
+,01/05/2026,Invoice,1001,Acme,Consulting,4000 Sales,6000.00,6000.00
+,01/10/2026,Payment,,Acme,Customer payment,1000 Checking,-4000.00,2000.00
+,02/03/2026,Invoice,1002,Beta,Consulting,4000 Sales,9000.00,11000.00
+,02/10/2026,Payment,,Beta,Customer payment,1000 Checking,-7000.00,4000.00
+Total for 1200 Accounts Receivable,,,,,,,,4000.00
+2000 Accounts Payable,,,,,,,,
+,01/15/2026,Bill,,Sub,COGS bill,5000 Cost of Goods Sold,-2000.00,-2000.00
+,02/15/2026,Bill Payment,,Sub,Pay vendor,1000 Checking,2000.00,0.00
+,02/18/2026,Bill,,Sub,COGS bill,5000 Cost of Goods Sold,-3000.00,-3000.00
+Total for 2000 Accounts Payable,,,,,,,,-3000.00
+4000 Sales,,,,,,,,
+,01/05/2026,Invoice,1001,Acme,Consulting,1200 Accounts Receivable,-6000.00,-6000.00
+,02/03/2026,Invoice,1002,Beta,Consulting,1200 Accounts Receivable,-9000.00,-15000.00
+Total for 4000 Sales,,,,,,,,-15000.00
+5000 Cost of Goods Sold,,,,,,,,
+,01/15/2026,Bill,,Sub,COGS bill,2000 Accounts Payable,2000.00,2000.00
+,02/18/2026,Bill,,Sub,COGS bill,2000 Accounts Payable,3000.00,5000.00
+Total for 5000 Cost of Goods Sold,,,,,,,,5000.00
+6000 Payroll Expense,,,,,,,,
+,01/20/2026,Check,,Staff,Payroll,1000 Checking,1500.00,1500.00
+,02/20/2026,Check,,Staff,Payroll,1000 Checking,1500.00,3000.00
+Total for 6000 Payroll Expense,,,,,,,,3000.00

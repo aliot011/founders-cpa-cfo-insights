@@ -1,6 +1,6 @@
 // Core domain types for the CFO insights tool.
 
-/** A category we bucket every GL account into. Drives all P&L math. */
+/** A category we bucket every GL account into. Drives all P&L / BS math. */
 export type Category =
   | 'revenue'
   | 'cogs'
@@ -8,6 +8,8 @@ export type Category =
   | 'other_income'
   | 'other_expense'
   | 'cash'
+  | 'asset'
+  | 'liability_equity'
   | 'ignore';
 
 export const CATEGORY_LABELS: Record<Category, string> = {
@@ -17,8 +19,24 @@ export const CATEGORY_LABELS: Record<Category, string> = {
   other_income: 'Other Income',
   other_expense: 'Other Expense',
   cash: 'Cash / Bank',
-  ignore: 'Ignore (not P&L or cash)',
+  asset: 'Other Asset (Balance Sheet)',
+  liability_equity: 'Liability / Equity (Balance Sheet)',
+  ignore: 'Ignore (exclude entirely)',
 };
+
+/** Every category, in a stable order. */
+export const ALL_CATEGORIES: Category[] = [
+  'revenue', 'cogs', 'opex', 'other_income', 'other_expense',
+  'cash', 'asset', 'liability_equity', 'ignore',
+];
+
+/** Profit & Loss categories (flows). */
+export const PNL_CATEGORIES: Category[] = [
+  'revenue', 'cogs', 'opex', 'other_income', 'other_expense',
+];
+
+/** Balance-sheet categories (stocks / balances). */
+export const BS_CATEGORIES: Category[] = ['cash', 'asset', 'liability_equity'];
 
 /** One normalized general-ledger transaction line. */
 export interface LedgerEntry {
