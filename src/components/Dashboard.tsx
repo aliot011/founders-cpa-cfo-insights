@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type { AccountMap, Dataset } from '../types';
 import { computeMetrics } from '../lib/metrics';
 import { formatMonth } from '../lib/format';
@@ -13,7 +13,18 @@ interface Props {
   onMapChange: (map: AccountMap) => void;
 }
 
+type TabId = 'summary' | 'detail' | 'variance' | 'accounts';
+
+const TABS: { id: TabId; label: string }[] = [
+  { id: 'summary', label: 'Summary' },
+  { id: 'detail', label: 'Detail' },
+  { id: 'variance', label: 'Variance' },
+  { id: 'accounts', label: 'Accounts' },
+];
+
 export function Dashboard({ dataset, onMapChange }: Props) {
+  const [tab, setTab] = useState<TabId>('summary');
+
   const metrics = useMemo(
     () => computeMetrics(dataset.entries, dataset.accountMap),
     [dataset.entries, dataset.accountMap],
@@ -28,60 +39,72 @@ export function Dashboard({ dataset, onMapChange }: Props) {
 
   return (
     <>
-      <div className="section-head">
-        <div>
-          <h2>Latest month</h2>
-          <span className="hint">
-            {metrics.length > 0 && formatMonth(metrics[metrics.length - 1].month)} · vs. prior month
-          </span>
-        </div>
-        <span className="hint">
+      <nav className="tabs" role="tablist">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            role="tab"
+            aria-selected={tab === t.id}
+            className={`tab${tab === t.id ? ' active' : ''}`}
+            onClick={() => setTab(t.id)}
+          >
+            {t.label}
+          </button>
+        ))}
+        <span className="tabs-meta hint">
           {metrics.length} month{metrics.length === 1 ? '' : 's'} · {range}
         </span>
-      </div>
+      </nav>
 
-      {!hasRevenue && (
-        <div className="callout">
-          No revenue was detected. Check the <strong>Account mapping</strong> below and set your income
-          accounts to <em>Revenue</em> — most other metrics depend on it.
+      {tab === 'summary' && (
+        <>
+          {!hasRevenue && (
+            <div className="callout">
+              No revenue was detected. Open the <strong>Accounts</strong> tab and set your income accounts to{' '}
+              <em>Revenue</em> — most other metrics depend on it.
+            </div>
+          )}
+
+          <div className="section-head">
+            <div>
+              <h2>Latest month</h2>
+              <span className="hint">
+                {metrics.length > 0 && formatMonth(metrics[metrics.length - 1].month)} · vs. prior month
+              </span>
+            </div>
+          </div>
+          <div className="section">
+            <KpiCards metrics={metrics} />
+          </div>
+
+          <div className="section">
+            <Charts metrics={metrics} />
+          </div>
+        </>
+      )}
+
+      {tab === 'detail' && (
+        <div className="section">
+          <MetricsTable metrics={metrics} />
         </div>
       )}
 
-      <div className="section">
-        <KpiCards metrics={metrics} />
-      </div>
-
-      <div className="section">
-        <div className="section-head">
-          <h2>Trends</h2>
-        </div>
-        <Charts metrics={metrics} />
-      </div>
-
-      <div className="section">
-        <div className="section-head">
-          <h2>Detail</h2>
-        </div>
-        <MetricsTable metrics={metrics} />
-      </div>
-
-      {months.length > 0 && (
+      {tab === 'variance' && months.length > 0 && (
         <div className="section">
-          <div className="section-head">
-            <h2>Variance</h2>
-            <span className="hint">Compare any two periods · P&amp;L and Balance Sheet</span>
-          </div>
           <VarianceAnalysis entries={dataset.entries} accountMap={dataset.accountMap} months={months} />
         </div>
       )}
 
-      <div className="section">
-        <AccountMapping
-          entries={dataset.entries}
-          accountMap={dataset.accountMap}
-          onChange={onMapChange}
-        />
-      </div>
+      {tab === 'accounts' && (
+        <div className="section">
+          <AccountMapping
+            entries={dataset.entries}
+            accountMap={dataset.accountMap}
+            onChange={onMapChange}
+            open
+          />
+        </div>
+      )}
     </>
   );
 }

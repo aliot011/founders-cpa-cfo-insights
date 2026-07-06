@@ -6,6 +6,8 @@ interface Props {
   entries: LedgerEntry[];
   accountMap: AccountMap;
   onChange: (map: AccountMap) => void;
+  /** Render expanded by default (e.g. when shown in its own tab). */
+  open?: boolean;
 }
 
 const CATEGORY_ORDER: Category[] = [
@@ -25,7 +27,7 @@ const CATEGORY_COLORS: Record<Category, { bg: string; fg: string }> = {
   ignore: { bg: '#eef1ef', fg: '#6b7a74' },
 };
 
-export function AccountMapping({ entries, accountMap, onChange }: Props) {
+export function AccountMapping({ entries, accountMap, onChange, open }: Props) {
   const [query, setQuery] = useState('');
 
   const totals = useMemo(() => {
@@ -53,7 +55,7 @@ export function AccountMapping({ entries, accountMap, onChange }: Props) {
   }
 
   return (
-    <details className="collapse panel">
+    <details className="collapse panel" open={open}>
       <summary className="panel-head">
         <h3>Account mapping ({accounts.length} accounts)</h3>
         <span className="muted" style={{ fontSize: 12 }}>
