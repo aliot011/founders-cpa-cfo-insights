@@ -2,7 +2,7 @@ import type { Category } from '../types';
 
 /**
  * Best-effort classification of a QuickBooks account name into a P&L / cash /
- * balance-sheet category. This is heuristic — the UI lets the user override
+ * balance-sheet category. This is heuristic; the UI lets the user override
  * every mapping.
  *
  * Strategy: try specific name keywords first (most reliable), then fall back to

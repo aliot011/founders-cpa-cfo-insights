@@ -28,8 +28,8 @@ function periodLabel(end: string, g: Granularity): string {
 
 /** Signed currency with an explicit + and a dash for zero. */
 function signed(n: number): string {
-  if (!isFinite(n)) return '—';
-  if (n === 0) return '—';
+  if (!isFinite(n)) return 'n/a';
+  if (n === 0) return 'n/a';
   return `${n > 0 ? '+' : ''}${formatCurrency(n)}`;
 }
 
@@ -135,7 +135,7 @@ export function VarianceAnalysis({ entries, accountMap, months }: Props) {
                     <td className={`num ${signClass(report.cashActualChange)}`}>{signed(report.cashActualChange)}</td>
                   </tr>
                   <tr className="var-summary">
-                    <td className="metric-name">Net cash impact — non-cash B/S</td>
+                    <td className="metric-name">Net cash impact of non-cash B/S</td>
                     <td className="num" colSpan={4}></td>
                     <td className={`num ${signClass(report.bsCashImpactTotal)}`}>{signed(report.bsCashImpactTotal)}</td>
                   </tr>
@@ -181,11 +181,11 @@ function PnlRow({ line }: { line: PnlLine }) {
 
 function pctText(pctChange: number | null, change: number): string {
   if (pctChange != null) return `${pctChange > 0 ? '+' : ''}${formatPercent(pctChange)}`;
-  if (!isFinite(change) || change === 0) return '—';
+  if (!isFinite(change) || change === 0) return 'n/a';
   return 'new';
 }
 
 function ptsText(change: number): string {
-  if (!isFinite(change) || change === 0) return '—';
+  if (!isFinite(change) || change === 0) return 'n/a';
   return `${change > 0 ? '+' : ''}${(change * 100).toFixed(1)} pts`;
 }

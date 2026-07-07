@@ -118,4 +118,4 @@ for (const account of ORDER) {
 
 const csv = out.join('\n') + '\n';
 writeFileSync(new URL('./sample-12-months.csv', import.meta.url), csv);
-console.log(`Wrote sample-12-months.csv — ${lines.length} lines across ${ORDER.length} accounts.`);
+console.log(`Wrote sample-12-months.csv: ${lines.length} lines across ${ORDER.length} accounts.`);

@@ -35,10 +35,10 @@ export function Upload({ onLoaded }: Props) {
 
   return (
     <div className="upload-wrap">
-      <h1>Founders CPA — CFO Insights</h1>
+      <h1>Founders CPA · CFO Insights</h1>
       <p className="upload-lede">
         Upload a QuickBooks <strong>General Ledger</strong> export (CSV or Excel) to see month-over-month
-        movement in your key metrics. Everything is parsed and stored locally in your browser — nothing is
+        movement in your key metrics. Everything is parsed and stored locally in your browser. Nothing is ever
         uploaded to a server.
       </p>
 
@@ -59,7 +59,7 @@ export function Upload({ onLoaded }: Props) {
       >
         <div className="dropzone-icon">↑</div>
         <h3>{busy ? 'Parsing…' : 'Drop your General Ledger here'}</h3>
-        <p>or click to browse — .csv, .xlsx, .xls</p>
+        <p>or click to browse (.csv, .xlsx, .xls)</p>
         <input
           ref={inputRef}
           type="file"

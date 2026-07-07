@@ -29,7 +29,7 @@ export function KpiCards({ metrics }: Props) {
             ? `${delta.pct > 0 ? '+' : ''}${formatPercent(delta.pct)}`
             : isFinite(delta.abs) && delta.abs !== 0
               ? 'new'
-              : '—';
+              : 'n/a';
 
         const absText = isFinite(delta.abs)
           ? isPercentMetric

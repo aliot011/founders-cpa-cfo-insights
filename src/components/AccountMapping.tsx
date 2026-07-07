@@ -64,7 +64,7 @@ export function AccountMapping({ entries, accountMap, onChange, open }: Props) {
       </summary>
       <div className="panel-body">
         <p className="muted" style={{ fontSize: 13, marginTop: 0 }}>
-          We auto-classified each account. Fix any that are wrong — the metrics recompute instantly and your
+          We auto-classified each account. Fix any that are wrong; the metrics recompute instantly and your
           mapping is saved in this browser.
         </p>
         <div className="mapping-toolbar">

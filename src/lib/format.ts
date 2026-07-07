@@ -1,5 +1,5 @@
 export function formatCurrency(n: number, compact = false): string {
-  if (!isFinite(n)) return '—';
+  if (!isFinite(n)) return 'n/a';
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
@@ -9,7 +9,7 @@ export function formatCurrency(n: number, compact = false): string {
 }
 
 export function formatPercent(fraction: number, digits = 1): string {
-  if (!isFinite(fraction)) return '—';
+  if (!isFinite(fraction)) return 'n/a';
   return `${(fraction * 100).toFixed(digits)}%`;
 }
 

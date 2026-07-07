@@ -55,7 +55,7 @@ export function Dashboard({ dataset, onMapChange }: Props) {
           {!hasRevenue && (
             <div className="callout">
               No revenue was detected. Open the <strong>Accounts</strong> tab and set your income accounts to{' '}
-              <em>Revenue</em> — most other metrics depend on it.
+              <em>Revenue</em>, since most other metrics depend on it.
             </div>
           )}
 

@@ -2,7 +2,7 @@
 
 A local-first tool for turning a **QuickBooks General Ledger** export into a CFO-style
 month-over-month dashboard. Upload a CSV or Excel export and it computes and trends your
-key metrics — no backend, no database. The parsed ledger lives only in your browser
+key metrics, with no backend and no database. The parsed ledger lives only in your browser
 (`localStorage`), so nothing is ever uploaded to a server.
 
 ## Metrics tracked
@@ -13,7 +13,7 @@ Each month, with month-over-month (MoM) change:
 - Gross Profit & Gross Margin
 - Operating Expenses
 - Net Operating Profit & Net Operating Margin
-- Other Income / (Expense) — the non-operating "OI/OE" line
+- Other Income / (Expense): the non-operating "OI/OE" line
 - Net Income & Net Income Margin
 - Cash (ending balance across cash/bank accounts)
 
@@ -26,7 +26,7 @@ Each month, with month-over-month (MoM) change:
    **Debit/Credit** columns.
 3. Every account is auto-classified into a category (Revenue, COGS, OpEx, Other
    Income/Expense, Cash, or Ignore) using account-number and name heuristics. You can
-   **override any mapping** in the UI — metrics recompute instantly and the mapping is
+   **override any mapping** in the UI; metrics recompute instantly and the mapping is
    saved locally.
 4. The dashboard shows latest-month KPIs with MoM deltas, trend charts, and a full
    metric-by-month table.

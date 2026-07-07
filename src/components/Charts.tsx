@@ -37,7 +37,7 @@ export function Charts({ metrics }: Props) {
   return (
     <div className="panel">
       <div className="panel-head">
-        <h3>Revenue, Net Income &amp; Cash — last 12 months</h3>
+        <h3>Revenue, Net Income &amp; Cash (last 12 months)</h3>
       </div>
       <div className="panel-body">
         <ResponsiveContainer width="100%" height={380}>
