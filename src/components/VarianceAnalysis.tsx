@@ -78,7 +78,7 @@ export function VarianceAnalysis({ entries, accountMap, months }: Props) {
         {/* ---- P&L totals ---- */}
         <h4 className="var-subhead">Profit &amp; Loss</h4>
         <div className="table-scroll">
-          <table className="metrics variance num">
+          <table className="metrics variance detail num">
             <thead>
               <tr>
                 <th className="metric-name">Line item</th>
@@ -156,7 +156,13 @@ export function VarianceAnalysis({ entries, accountMap, months }: Props) {
 }
 
 function PnlRow({ line }: { line: PnlLine }) {
-  const rowClass = line.emphasis ? 'var-summary' : line.sub ? 'var-sub' : '';
+  // Match the Detail table: rule line + bold on totals, italics on margins.
+  const rowClass = [
+    line.emphasis ? 'metric-rule metric-total' : '',
+    line.sub ? 'metric-margin' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
   const isPct = line.format === 'percent';
 
   const v1 = isPct ? formatPercent(line.p1) : formatCurrency(line.p1);
@@ -169,7 +175,7 @@ function PnlRow({ line }: { line: PnlLine }) {
 
   return (
     <tr className={rowClass}>
-      <td className={`metric-name${line.sub ? ' var-indent' : ''}`}>{line.label}</td>
+      <td className="metric-name">{line.label}</td>
       <td className="num">{v1}</td>
       <td className="num">{v2}</td>
       <td className={`num ${changeCls}`}>{changeText}</td>

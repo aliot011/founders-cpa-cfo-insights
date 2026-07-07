@@ -367,6 +367,13 @@ table.detail tbody tr.metric-margin td {
   font-style: italic;
   color: var(--ink-2);
 }
+/* In Flux, keep the +/- colour on the change columns for italic margin rows. */
+table.variance tbody tr.metric-margin td.pos {
+  color: var(--pos);
+}
+table.variance tbody tr.metric-margin td.neg {
+  color: var(--neg);
+}
 /* Only total lines are bold; everything else (incl. the label) is regular. */
 table.detail td,
 table.detail td.metric-name {
