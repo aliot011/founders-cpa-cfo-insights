@@ -333,6 +333,19 @@ table.metrics tbody tr:hover td.metric-name {
   margin-top: 2px;
 }
 
+/* ---- Detail metrics table -------------------------------------------- */
+/* Clean statement look: rule lines only above subtotal/total rows. */
+table.detail tbody td {
+  border-bottom: none;
+}
+table.detail tbody tr.metric-rule td {
+  border-top: 1px solid var(--line-strong);
+}
+table.detail tbody tr.metric-margin td {
+  font-style: italic;
+  color: var(--ink-2);
+}
+
 /* ---- Charts ---------------------------------------------------------- */
 .charts-grid {
   display: grid;

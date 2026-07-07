@@ -93,6 +93,7 @@ export interface MonthlyMetrics {
 
 export type MetricKey =
   | 'revenue'
+  | 'cogs'
   | 'grossProfit'
   | 'grossMargin'
   | 'opex'
@@ -114,6 +115,7 @@ export interface MetricDef {
 
 export const METRIC_DEFS: MetricDef[] = [
   { key: 'revenue', label: 'Revenue', format: 'currency', help: 'Total income from revenue accounts.' },
+  { key: 'cogs', label: 'Cost of Goods Sold', format: 'currency', help: 'Total cost of goods sold.' },
   { key: 'grossProfit', label: 'Gross Profit', format: 'currency', help: 'Revenue − COGS.' },
   { key: 'grossMargin', label: 'Gross Margin', format: 'percent', help: 'Gross Profit ÷ Revenue.' },
   { key: 'opex', label: 'Operating Expenses', format: 'currency', help: 'Total operating expenses.' },
