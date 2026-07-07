@@ -35,7 +35,7 @@ export default function App() {
         <div className="brand">
           <img className="brand-mark" src={logo} alt="Startup Accounting Advisors" />
           <div>
-            <div className="brand-title">Founders CPA · CFO Insights</div>
+            <div className="brand-title">Advisory Intelligence</div>
           </div>
         </div>
         {dataset && (
