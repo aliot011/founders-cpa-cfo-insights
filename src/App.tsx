@@ -4,6 +4,7 @@ import type { AccountMap, Dataset } from './types';
 import { clearDataset, loadDataset, saveDataset, updateAccountMap } from './lib/storage';
 import { Upload } from './components/Upload';
 import { Dashboard } from './components/Dashboard';
+import logo from './assets/logo.jpeg';
 
 export default function App() {
   const [dataset, setDataset] = useState<Dataset | null>(null);
@@ -32,7 +33,7 @@ export default function App() {
     <div className="app">
       <header className="topbar">
         <div className="brand">
-          <div className="brand-mark">F</div>
+          <img className="brand-mark" src={logo} alt="Startup Accounting Advisors" />
           <div>
             <div className="brand-title">Founders CPA · CFO Insights</div>
           </div>
