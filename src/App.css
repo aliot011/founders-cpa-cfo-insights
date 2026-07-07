@@ -259,7 +259,13 @@
   align-items: center;
   gap: 8px;
 }
-.sync-setting-controls input[type='date'] {
+.sync-setting + .sync-setting {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+.sync-setting-controls input[type='date'],
+.sync-setting-controls select {
   font-family: inherit;
   font-size: 13px;
   padding: 7px 10px;
@@ -699,7 +705,58 @@ table.variance .var-net td.metric-name {
   margin: 14px 2px 0;
 }
 
+/* Month picker above the KPI cards. */
+.kpi-toolbar {
+  margin-bottom: 14px;
+  justify-content: flex-end;
+}
+
+/* ---- Checks ------------------------------------------------------------ */
+/* Sub-tab bar styled like the main tabs, one size down, with alert counts. */
+.tabs.subtabs {
+  margin-bottom: 20px;
+}
+.subtabs .tab {
+  font-size: 13px;
+  padding: 10px 14px;
+}
+.tab-count {
+  display: inline-block;
+  margin-left: 7px;
+  min-width: 18px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: var(--line);
+  color: var(--ink-2);
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+}
+.tab-count.has-alerts {
+  background: var(--neg-soft);
+  color: var(--neg);
+}
+table.checks th,
+table.checks td {
+  text-align: left;
+}
+table.checks th.checks-amount,
+table.checks td.checks-amount {
+  text-align: right;
+}
+table.checks td.checks-memo {
+  white-space: normal;
+  min-width: 220px;
+  color: var(--ink-2);
+}
+
 /* ---- Vendor spend ------------------------------------------------------ */
+/* Panels hosting a dropdown must not clip it; the table keeps its own
+   scroll container, so corner clipping is not needed here. */
+.panel.panel-pop {
+  overflow: visible;
+}
+
 /* Left-hand control group in a controls-only panel head (which is flex-end). */
 .ph-lead {
   margin-right: auto;

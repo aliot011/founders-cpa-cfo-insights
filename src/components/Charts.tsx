@@ -4,6 +4,7 @@ import {
   ComposedChart,
   Legend,
   Line,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -33,6 +34,10 @@ export function Charts({ metrics }: Props) {
 
   const axisStyle = { fontSize: 11, fill: 'var(--muted)' };
   const compact = (v: number) => formatCurrency(v, true);
+
+  // When a line series dips below zero the axis no longer starts at $0, so
+  // anchor the eye with a dotted zero line (omitted when everything is >= 0).
+  const hasNegative = data.some((d) => d.revenue < 0 || d.netIncome < 0);
 
   return (
     <div className="panel">
@@ -81,6 +86,9 @@ export function Charts({ metrics }: Props) {
             />
             <Tooltip formatter={(v) => formatCurrency(Number(v))} contentStyle={tooltipStyle} />
             <Legend verticalAlign="top" height={30} wrapperStyle={{ fontSize: 12 }} />
+            {hasNegative && (
+              <ReferenceLine yAxisId="left" y={0} stroke="#000" strokeDasharray="4 4" strokeWidth={1.5} />
+            )}
             <Bar
               yAxisId="right"
               dataKey="cash"

@@ -3,13 +3,17 @@ import { computeDelta, formatCurrency, formatPercent } from '../lib/format';
 
 interface Props {
   metrics: MonthlyMetrics[];
+  /** Month (YYYY-MM) to snapshot; defaults to the latest. */
+  asOf?: string;
 }
 
-/** Latest-month snapshot with MoM deltas. */
-export function KpiCards({ metrics }: Props) {
+/** One-month snapshot with MoM deltas. */
+export function KpiCards({ metrics, asOf }: Props) {
   if (metrics.length === 0) return null;
-  const current = metrics[metrics.length - 1];
-  const prior = metrics.length > 1 ? metrics[metrics.length - 2] : undefined;
+  const found = asOf ? metrics.findIndex((m) => m.month === asOf) : -1;
+  const idx = found >= 0 ? found : metrics.length - 1;
+  const current = metrics[idx];
+  const prior = idx > 0 ? metrics[idx - 1] : undefined;
 
   return (
     <div className="kpi-grid">

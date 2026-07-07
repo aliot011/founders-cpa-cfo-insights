@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../lib/api.ts';
-import type { ClientDataset, ClientSummary, SyncLogEntry } from '../types.ts';
+import type { AccountingMethod, ClientDataset, ClientSummary, SyncLogEntry } from '../types.ts';
 
 interface Props {
   client: ClientSummary;
@@ -16,6 +16,7 @@ export function SyncTab({ client, dataset, onDataChanged, onDisconnected }: Prop
   const [log, setLog] = useState<SyncLogEntry[]>([]);
   const [startDate, setStartDate] = useState(client.syncStartDate ?? '');
   const [savingSettings, setSavingSettings] = useState(false);
+  const [method, setMethod] = useState<AccountingMethod>(client.accountingMethod);
 
   const refreshLog = useCallback(() => {
     api.getSyncLog(client.realmId).then(setLog).catch(() => setLog([]));
@@ -24,8 +25,9 @@ export function SyncTab({ client, dataset, onDataChanged, onDisconnected }: Prop
   useEffect(() => {
     refreshLog();
     setStartDate(client.syncStartDate ?? '');
+    setMethod(client.accountingMethod);
     setError(null);
-  }, [client.realmId, client.syncStartDate, refreshLog]);
+  }, [client.realmId, client.syncStartDate, client.accountingMethod, refreshLog]);
 
   async function handleSync() {
     setBusy(true);
@@ -45,12 +47,25 @@ export function SyncTab({ client, dataset, onDataChanged, onDisconnected }: Prop
     setSavingSettings(true);
     setError(null);
     try {
-      await api.saveSettings(client.realmId, startDate || null);
+      await api.saveSettings(client.realmId, { syncStartDate: startDate || null });
       onDataChanged();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not save settings.');
     } finally {
       setSavingSettings(false);
+    }
+  }
+
+  async function handleMethodChange(next: AccountingMethod) {
+    const prev = method;
+    setMethod(next);
+    setError(null);
+    try {
+      await api.saveSettings(client.realmId, { accountingMethod: next });
+      onDataChanged();
+    } catch (err) {
+      setMethod(prev);
+      setError(err instanceof Error ? err.message : 'Could not save settings.');
     }
   }
 
@@ -126,6 +141,21 @@ export function SyncTab({ client, dataset, onDataChanged, onDisconnected }: Prop
             <h3>Sync settings</h3>
           </div>
           <div className="panel-body">
+            <label className="sync-setting">
+              <span>
+                Accounting basis
+                <span className="sync-setting-hint">
+                  How QuickBooks reports this client&rsquo;s ledger: accrual counts invoices and bills when
+                  they&rsquo;re recorded; cash counts them when money moves. Takes effect on the next sync.
+                </span>
+              </span>
+              <span className="sync-setting-controls">
+                <select value={method} onChange={(e) => handleMethodChange(e.target.value as AccountingMethod)}>
+                  <option value="Accrual">Accrual</option>
+                  <option value="Cash">Cash</option>
+                </select>
+              </span>
+            </label>
             <label className="sync-setting">
               <span>
                 Pull transactions from

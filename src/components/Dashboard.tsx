@@ -8,6 +8,7 @@ import { Charts } from './Charts';
 import { AccountMapping } from './AccountMapping';
 import { VarianceAnalysis } from './VarianceAnalysis';
 import { VendorSpend } from './VendorSpend';
+import { Checks } from './Checks';
 
 interface Props {
   dataset: ClientDataset;
@@ -17,7 +18,7 @@ interface Props {
   initialTab?: TabId;
 }
 
-export type TabId = 'summary' | 'kpis' | 'detail' | 'variance' | 'vendors' | 'accounts' | 'sync';
+export type TabId = 'summary' | 'kpis' | 'detail' | 'variance' | 'vendors' | 'checks' | 'accounts' | 'sync';
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'summary', label: 'Summary' },
@@ -25,12 +26,14 @@ const TABS: { id: TabId; label: string }[] = [
   { id: 'detail', label: 'Detail' },
   { id: 'variance', label: 'Flux' },
   { id: 'vendors', label: 'Vendor Spend' },
+  { id: 'checks', label: 'Checks' },
   { id: 'accounts', label: 'Accounts' },
   { id: 'sync', label: 'Sync' },
 ];
 
 export function Dashboard({ dataset, onMapChange, syncTab, initialTab }: Props) {
   const [tab, setTab] = useState<TabId>(initialTab ?? 'summary');
+  const [kpiMonth, setKpiMonth] = useState<string | null>(null); // null = latest
 
   const metrics = useMemo(
     () => computeMetrics(dataset.entries, dataset.accountMap),
@@ -40,7 +43,9 @@ export function Dashboard({ dataset, onMapChange, syncTab, initialTab }: Props) 
   const months = useMemo(() => metrics.map((m) => m.month), [metrics]);
   const hasData = dataset.entries.length > 0;
   const hasRevenue = metrics.some((m) => m.revenue !== 0);
-  const latestMonthLabel = metrics.length > 0 ? formatMonth(metrics[metrics.length - 1].month) : 'the latest month';
+  // Selected KPI month, falling back to the latest (also covers stale selections after a re-sync).
+  const kpiAsOf = kpiMonth && months.includes(kpiMonth) ? kpiMonth : months[months.length - 1];
+  const kpiMonthLabel = kpiAsOf ? formatMonth(kpiAsOf) : 'the latest month';
 
   const emptyCallout = (
     <div className="callout">
@@ -89,12 +94,20 @@ export function Dashboard({ dataset, onMapChange, syncTab, initialTab }: Props) 
         <>
           <PageHeader
             title="Key Metrics"
-            subtitle={`Headline numbers for ${latestMonthLabel} with month-over-month change, so you can quickly see what moved and by how much.`}
+            subtitle={`Headline numbers for ${kpiMonthLabel} with month-over-month change, so you can quickly see what moved and by how much.`}
           />
           {!hasData && emptyCallout}
           {hasData && (
             <div className="section">
-              <KpiCards metrics={metrics} />
+              <div className="period-picker kpi-toolbar">
+                <span className="muted" style={{ fontSize: 12 }}>Month</span>
+                <select className="pp-gran" value={kpiAsOf} onChange={(e) => setKpiMonth(e.target.value)}>
+                  {months.map((m) => (
+                    <option key={m} value={m}>{formatMonth(m)}</option>
+                  ))}
+                </select>
+              </div>
+              <KpiCards metrics={metrics} asOf={kpiAsOf} />
             </div>
           )}
         </>
@@ -140,6 +153,21 @@ export function Dashboard({ dataset, onMapChange, syncTab, initialTab }: Props) 
           {hasData && (
             <div className="section">
               <VendorSpend entries={dataset.entries} accountMap={dataset.accountMap} />
+            </div>
+          )}
+        </>
+      )}
+
+      {tab === 'checks' && (
+        <>
+          <PageHeader
+            title="Checks"
+            subtitle="Data-quality checks over the synced ledger, so bookkeeping gaps get caught and fixed in QuickBooks before they distort the reports."
+          />
+          {!hasData && emptyCallout}
+          {hasData && (
+            <div className="section">
+              <Checks entries={dataset.entries} accountMap={dataset.accountMap} />
             </div>
           )}
         </>

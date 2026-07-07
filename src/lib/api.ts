@@ -1,4 +1,4 @@
-import type { AccountMap, ClientDataset, ClientSummary, SyncLogEntry, SyncResult } from '../types.ts';
+import type { AccountingMethod, AccountMap, ClientDataset, ClientSummary, SyncLogEntry, SyncResult } from '../types.ts';
 
 export type ApiErrorCode = 'needs_reauth' | 'not_found' | 'qbo_error' | 'sync_in_progress' | 'bad_request';
 
@@ -46,10 +46,10 @@ export const api = {
   getSyncLog: (realmId: string, limit = 20) =>
     request<SyncLogEntry[]>(`/clients/${encodeURIComponent(realmId)}/sync-log?limit=${limit}`),
 
-  saveSettings: (realmId: string, syncStartDate: string | null) =>
+  saveSettings: (realmId: string, settings: { syncStartDate?: string | null; accountingMethod?: AccountingMethod }) =>
     request<{ ok: true }>(`/clients/${encodeURIComponent(realmId)}/settings`, {
       method: 'PUT',
-      body: JSON.stringify({ syncStartDate }),
+      body: JSON.stringify(settings),
     }),
 
   disconnect: (realmId: string) =>

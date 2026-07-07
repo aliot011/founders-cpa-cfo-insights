@@ -8,6 +8,12 @@ export function formatCurrency(n: number, compact = false): string {
   }).format(n);
 }
 
+/** Currency with cents, for transaction-level detail rows. */
+export function formatCurrencyExact(n: number): string {
+  if (!isFinite(n)) return 'n/a';
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
+}
+
 export function formatPercent(fraction: number, digits = 1): string {
   if (!isFinite(fraction)) return 'n/a';
   return `${(fraction * 100).toFixed(digits)}%`;

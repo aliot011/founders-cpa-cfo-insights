@@ -172,7 +172,7 @@ export function VendorSpend({ entries, accountMap }: Props) {
   const cell = (v: number) => (v === 0 ? <span className="cell-zero">–</span> : formatCurrency(v));
 
   return (
-    <div className="panel">
+    <div className="panel panel-pop">
       <div className="panel-head panel-head-controls">
         <div className="period-picker ph-lead">
           <AccountPicker
