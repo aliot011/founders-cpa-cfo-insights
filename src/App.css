@@ -345,6 +345,15 @@ table.detail tbody tr.metric-margin td {
   font-style: italic;
   color: var(--ink-2);
 }
+/* Total column set off on the right. */
+table.detail .col-total {
+  border-left: 1px solid var(--line-strong);
+  font-weight: 700;
+  background: #fbfcfb;
+}
+table.detail thead th.col-total {
+  background: var(--surface);
+}
 
 /* ---- Charts ---------------------------------------------------------- */
 .charts-grid {

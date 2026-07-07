@@ -1,5 +1,5 @@
 import { METRIC_DEFS, type MetricKey, type MonthlyMetrics } from '../types';
-import { computeDelta, formatCurrency, formatMonthShort, formatPercent } from '../lib/format';
+import { formatCurrency, formatMonthShort, formatPercent } from '../lib/format';
 
 interface Props {
   metrics: MonthlyMetrics[];
@@ -8,13 +8,38 @@ interface Props {
 /** Subtotal / total rows that get a rule line above them. */
 const RULED = new Set<MetricKey>(['grossProfit', 'operatingProfit', 'netIncome']);
 
-/** Full metric-by-month grid with MoM % change under each value. */
+/** Column totals: flows sum, margins recompute on totals, cash = ending balance. */
+function computeTotals(metrics: MonthlyMetrics[]): Record<MetricKey, number> {
+  const sum = (k: MetricKey) => metrics.reduce((t, m) => t + (isFinite(m[k]) ? m[k] : 0), 0);
+  const revenue = sum('revenue');
+  const grossProfit = sum('grossProfit');
+  const operatingProfit = sum('operatingProfit');
+  const netIncome = sum('netIncome');
+  const margin = (n: number) => (revenue !== 0 ? n / revenue : NaN);
+  return {
+    revenue,
+    cogs: sum('cogs'),
+    grossProfit,
+    grossMargin: margin(grossProfit),
+    opex: sum('opex'),
+    operatingProfit,
+    operatingMargin: margin(operatingProfit),
+    otherNet: sum('otherNet'),
+    netIncome,
+    netIncomeMargin: margin(netIncome),
+    cash: metrics.length > 0 ? metrics[metrics.length - 1].cash : NaN,
+  };
+}
+
+/** Full metric-by-month grid with a total column. */
 export function MetricsTable({ metrics }: Props) {
+  const totals = computeTotals(metrics);
+
   return (
     <div className="panel">
       <div className="panel-head">
         <h3>All metrics by month</h3>
-        <span className="muted" style={{ fontSize: 12 }}>MoM % shown beneath each value</span>
+        <span className="muted" style={{ fontSize: 12 }}>Total = sum of months (margins recomputed; cash = ending balance)</span>
       </div>
       <div className="table-scroll">
         <table className="metrics detail num">
@@ -24,6 +49,7 @@ export function MetricsTable({ metrics }: Props) {
               {metrics.map((m) => (
                 <th key={m.month}>{formatMonthShort(m.month)}</th>
               ))}
+              <th className="col-total">Total</th>
             </tr>
           </thead>
           <tbody>
@@ -33,32 +59,14 @@ export function MetricsTable({ metrics }: Props) {
               const trClass = [ruled ? 'metric-rule' : '', isMargin ? 'metric-margin' : '']
                 .filter(Boolean)
                 .join(' ');
+              const fmt = (v: number) => (def.format === 'percent' ? formatPercent(v) : formatCurrency(v));
               return (
                 <tr key={def.key} className={trClass}>
                   <td className="metric-name" title={def.help}>{def.label}</td>
-                  {metrics.map((m, i) => {
-                    const value = m[def.key];
-                    const prior = i > 0 ? metrics[i - 1][def.key] : undefined;
-                    const delta = computeDelta(value, prior);
-                    const display =
-                      def.format === 'percent' ? formatPercent(value) : formatCurrency(value);
-                    const deltaClass =
-                      !isFinite(delta.abs) || delta.abs === 0 ? 'muted' : delta.abs > 0 ? 'pos' : 'neg';
-                    const deltaText =
-                      delta.pct != null
-                        ? `${delta.pct > 0 ? '+' : ''}${formatPercent(delta.pct)}`
-                        : i === 0
-                          ? 'n/a'
-                          : isFinite(delta.abs) && delta.abs !== 0
-                            ? 'new'
-                            : '—';
-                    return (
-                      <td key={m.month}>
-                        {display}
-                        <span className={`cell-delta ${i === 0 ? 'muted' : deltaClass}`}>{deltaText}</span>
-                      </td>
-                    );
-                  })}
+                  {metrics.map((m) => (
+                    <td key={m.month}>{fmt(m[def.key])}</td>
+                  ))}
+                  <td className="col-total">{fmt(totals[def.key])}</td>
                 </tr>
               );
             })}
