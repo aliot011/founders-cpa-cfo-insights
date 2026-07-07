@@ -7,19 +7,21 @@ import { MetricsTable } from './MetricsTable';
 import { Charts } from './Charts';
 import { AccountMapping } from './AccountMapping';
 import { VarianceAnalysis } from './VarianceAnalysis';
+import { VendorSpend } from './VendorSpend';
 
 interface Props {
   dataset: Dataset;
   onMapChange: (map: AccountMap) => void;
 }
 
-type TabId = 'summary' | 'kpis' | 'detail' | 'variance' | 'accounts';
+type TabId = 'summary' | 'kpis' | 'detail' | 'variance' | 'vendors' | 'accounts';
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'summary', label: 'Summary' },
   { id: 'kpis', label: 'KPIs' },
   { id: 'detail', label: 'Detail' },
   { id: 'variance', label: 'Flux' },
+  { id: 'vendors', label: 'Vendor Spend' },
   { id: 'accounts', label: 'Accounts' },
 ];
 
@@ -101,6 +103,18 @@ export function Dashboard({ dataset, onMapChange }: Props) {
           />
           <div className="section">
             <VarianceAnalysis entries={dataset.entries} accountMap={dataset.accountMap} months={months} />
+          </div>
+        </>
+      )}
+
+      {tab === 'vendors' && (
+        <>
+          <PageHeader
+            title="Vendor Spend"
+            subtitle="A tiered pivot of spend across periods for the accounts you choose — vendors broken down by account, or accounts broken down by vendor — so you can see exactly who you pay and how that spend is trending."
+          />
+          <div className="section">
+            <VendorSpend entries={dataset.entries} accountMap={dataset.accountMap} />
           </div>
         </>
       )}

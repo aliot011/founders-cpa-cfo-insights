@@ -35,11 +35,12 @@ export function Upload({ onLoaded }: Props) {
 
   return (
     <div className="upload-wrap">
-      <h1>Founders CPA · CFO Insights</h1>
+      <h1>Advisory Intelligence</h1>
       <p className="upload-lede">
         Upload a QuickBooks <strong>General Ledger</strong> export (CSV or Excel) to see month-over-month
-        movement in your key metrics. Everything is parsed and stored locally in your browser. Nothing is ever
-        uploaded to a server.
+        movement in your key metrics. Include Vendor and Customer columns in the export to unlock the vendor
+        spend breakdown. Everything is parsed and stored locally in your browser. Nothing is ever uploaded to
+        a server.
       </p>
 
       <div

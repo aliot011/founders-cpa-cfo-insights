@@ -551,6 +551,125 @@ table.variance .var-net td.metric-name {
   margin: 14px 2px 0;
 }
 
+/* ---- Vendor spend ------------------------------------------------------ */
+/* Left-hand control group in a controls-only panel head (which is flex-end). */
+.ph-lead {
+  margin-right: auto;
+}
+
+/* Segmented Vendors / Accounts toggle. */
+.seg {
+  display: inline-flex;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.seg button {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border: none;
+  background: var(--surface);
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.seg button + button {
+  border-left: 1px solid var(--line-strong);
+}
+.seg button.active {
+  background: var(--accent-soft);
+  color: var(--accent-dark);
+}
+
+/* Multi-select account dropdown. */
+.acct-dd {
+  position: relative;
+}
+.acct-dd-btn {
+  font-size: 12px;
+  padding: 5px 10px;
+}
+.acct-dd-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 15;
+  min-width: 280px;
+  max-height: 340px;
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+  padding: 10px 12px 12px;
+}
+.acct-dd-actions {
+  display: flex;
+  gap: 6px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+.btn-xs {
+  font-size: 11px;
+  padding: 3px 8px;
+}
+.acct-dd-group {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin: 10px 0 4px;
+}
+.acct-dd-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  padding: 3px 0;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.acct-dd-item input {
+  accent-color: var(--accent);
+}
+.cell-zero {
+  color: var(--muted);
+}
+
+/* Tiered pivot rows: bold clickable parents, indented children. */
+table.pivot tbody tr.pivot-parent td,
+table.pivot tbody tr.pivot-parent td.metric-name {
+  font-weight: 600;
+  cursor: pointer;
+}
+.pivot-toggle {
+  font: inherit;
+  font-weight: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.pivot-caret {
+  display: inline-block;
+  width: 16px;
+  color: var(--muted);
+  font-size: 11px;
+}
+table.pivot td.metric-name.pivot-child {
+  padding-left: 34px;
+  color: var(--ink-2);
+}
+table.pivot tbody tr.pivot-childrow td {
+  font-size: 12.5px;
+}
+
 .period-picker {
   display: flex;
   align-items: center;

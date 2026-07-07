@@ -1,12 +1,10 @@
 import { useState } from 'react';
 import { METRIC_DEFS, type MetricKey, type MonthlyMetrics } from '../types';
-import { formatCurrency, formatMonthShort, formatPercent } from '../lib/format';
+import { bucketMonth, formatCurrency, formatPercent, type Granularity } from '../lib/format';
 
 interface Props {
   metrics: MonthlyMetrics[];
 }
-
-type Granularity = 'month' | 'quarter' | 'year';
 
 const GRAN_LABELS: Record<Granularity, string> = {
   month: 'Monthly',
@@ -60,23 +58,12 @@ function aggregate(months: MonthlyMetrics[]): Record<MetricKey, number> {
   };
 }
 
-function bucket(month: string, gran: Granularity): { key: string; label: string } {
-  const [y, m] = month.split('-').map(Number);
-  const yy = `'${String(y).slice(2)}`;
-  if (gran === 'month') return { key: month, label: formatMonthShort(month) };
-  if (gran === 'quarter') {
-    const q = Math.floor((m - 1) / 3) + 1;
-    return { key: `${y}-Q${q}`, label: `Q${q} ${yy}` };
-  }
-  return { key: `${y}`, label: `${y}` };
-}
-
 /** Group monthly metrics into columns by the chosen granularity. */
 function toColumns(metrics: MonthlyMetrics[], gran: Granularity): Column[] {
   const byKey = new Map<string, { label: string; months: MonthlyMetrics[] }>();
   const order: string[] = [];
   for (const m of metrics) {
-    const { key, label } = bucket(m.month, gran);
+    const { key, label } = bucketMonth(m.month, gran);
     let c = byKey.get(key);
     if (!c) {
       c = { label, months: [] };

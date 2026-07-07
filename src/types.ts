@@ -48,6 +48,8 @@ export interface LedgerEntry {
   /** Debit-positive signed amount (debit − credit). */
   amount: number;
   name?: string;
+  vendor?: string;
+  customer?: string;
   memo?: string;
   transactionType?: string;
 }

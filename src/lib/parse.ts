@@ -33,6 +33,8 @@ interface ColMap {
   credit: number;
   balance: number;
   name: number;
+  vendor: number;
+  customer: number;
   memo: number;
   type: number;
   split: number;
@@ -46,6 +48,8 @@ const HEADER_PATTERNS: Record<keyof ColMap, RegExp> = {
   credit: /^credit$/i,
   balance: /^balance$/i,
   name: /^(name|payee|customer|vendor)/i,
+  vendor: /^vendor/i,
+  customer: /^customer/i,
   memo: /^(memo|description|memo\/description)/i,
   type: /^(transaction type|type)/i,
   split: /^split/i,
@@ -59,7 +63,7 @@ function detectHeaderRow(matrix: string[][]): { index: number; cols: ColMap } | 
     if (hasDate && hasValue) {
       const cols: ColMap = {
         date: -1, account: -1, amount: -1, debit: -1, credit: -1,
-        balance: -1, name: -1, memo: -1, type: -1, split: -1,
+        balance: -1, name: -1, vendor: -1, customer: -1, memo: -1, type: -1, split: -1,
       };
       (Object.keys(HEADER_PATTERNS) as (keyof ColMap)[]).forEach((key) => {
         const idx = row.findIndex((c) => HEADER_PATTERNS[key].test(c));
@@ -200,6 +204,8 @@ export async function parseFile(file: File): Promise<ParseResult> {
       account,
       amount,
       name: cell(cols.name) || undefined,
+      vendor: cell(cols.vendor) || undefined,
+      customer: cell(cols.customer) || undefined,
       memo: cell(cols.memo) || undefined,
       transactionType: cell(cols.type) || undefined,
     });
@@ -211,6 +217,9 @@ export async function parseFile(file: File): Promise<ParseResult> {
 
   notes.push(`Parsed ${entries.length.toLocaleString()} transactions across ${accountsSet.size} accounts.`);
   notes.push(useDrCr ? 'Used Debit/Credit columns (debit-positive).' : 'Used a single signed Amount column.');
+  if (cols.vendor >= 0 || cols.customer >= 0) {
+    notes.push('Detected Vendor/Customer columns — Vendor Spend will use them.');
+  }
   if (skipped > 0) notes.push(`Skipped ${skipped} row(s) that had no account or no usable date/amount.`);
 
   return {

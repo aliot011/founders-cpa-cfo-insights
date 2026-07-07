@@ -28,6 +28,21 @@ export function formatMonthShort(month: string): string {
   return d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
 }
 
+/** Period granularity used by the pivot-style tables. */
+export type Granularity = 'month' | 'quarter' | 'year';
+
+/** Bucket a YYYY-MM month key by granularity into a stable key + display label. */
+export function bucketMonth(month: string, gran: Granularity): { key: string; label: string } {
+  const [y, m] = month.split('-').map(Number);
+  const yy = `'${String(y).slice(2)}`;
+  if (gran === 'month') return { key: month, label: formatMonthShort(month) };
+  if (gran === 'quarter') {
+    const q = Math.floor((m - 1) / 3) + 1;
+    return { key: `${y}-Q${q}`, label: `Q${q} ${yy}` };
+  }
+  return { key: `${y}`, label: `${y}` };
+}
+
 /** Shift a YYYY-MM month key by a number of months (can be negative). */
 export function shiftMonth(month: string, deltaMonths: number): string {
   const [y, m] = month.split('-').map(Number);
