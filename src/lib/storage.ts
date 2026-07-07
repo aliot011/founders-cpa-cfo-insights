@@ -1,35 +1,28 @@
-import type { AccountMap, Dataset } from '../types';
+// The dataset itself lives server-side now; the browser only remembers which
+// client was last open.
 
-const KEY = 'founders-cfo-insights:dataset:v1';
+const LAST_CLIENT_KEY = 'founders-cfo-insights:last-client';
 
-export function saveDataset(ds: Dataset): void {
+export function saveLastClient(realmId: string): void {
   try {
-    localStorage.setItem(KEY, JSON.stringify(ds));
-  } catch (err) {
-    console.error('Failed to persist dataset (storage full?)', err);
-    throw new Error(
-      'Could not save the data to your browser. The ledger may be too large for localStorage.',
-    );
+    localStorage.setItem(LAST_CLIENT_KEY, realmId);
+  } catch {
+    // Non-essential; ignore storage failures.
   }
 }
 
-export function loadDataset(): Dataset | null {
+export function loadLastClient(): string | null {
   try {
-    const raw = localStorage.getItem(KEY);
-    if (!raw) return null;
-    return JSON.parse(raw) as Dataset;
-  } catch (err) {
-    console.error('Failed to load dataset', err);
+    return localStorage.getItem(LAST_CLIENT_KEY);
+  } catch {
     return null;
   }
 }
 
-export function clearDataset(): void {
-  localStorage.removeItem(KEY);
-}
-
-export function updateAccountMap(ds: Dataset, accountMap: AccountMap): Dataset {
-  const next = { ...ds, accountMap };
-  saveDataset(next);
-  return next;
+export function clearLastClient(): void {
+  try {
+    localStorage.removeItem(LAST_CLIENT_KEY);
+  } catch {
+    // ignore
+  }
 }

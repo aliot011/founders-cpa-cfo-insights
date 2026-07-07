@@ -4,25 +4,35 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently -k -n web,api npm:dev:web npm:dev:server",
+    "dev:web": "vite",
+    "dev:server": "tsx watch server/src/index.ts",
     "build": "tsc -b && vite build",
+    "start": "NODE_ENV=production tsx server/src/index.ts",
     "lint": "oxlint",
+    "test": "tsx --test server/test/*.test.ts",
     "preview": "vite preview"
   },
   "dependencies": {
-    "papaparse": "^5.5.4",
+    "better-sqlite3": "^12.11.1",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "recharts": "^3.9.2",
-    "xlsx": "^0.18.5"
+    "recharts": "^3.9.2"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/cookie-parser": "^1.4.10",
+    "@types/express": "^5.0.6",
     "@types/node": "^24.13.2",
-    "@types/papaparse": "^5.5.2",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
+    "concurrently": "^10.0.3",
     "oxlint": "^1.71.0",
+    "tsx": "^4.23.0",
     "typescript": "~6.0.2",
     "vite": "^8.1.1"
   }

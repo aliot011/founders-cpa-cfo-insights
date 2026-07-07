@@ -1,9 +1,8 @@
 # Founders CPA · CFO Insights
 
-A local-first tool for turning a **QuickBooks General Ledger** export into a CFO-style
-month-over-month dashboard. Upload a CSV or Excel export and it computes and trends your
-key metrics, with no backend and no database. The parsed ledger lives only in your browser
-(`localStorage`), so nothing is ever uploaded to a server.
+A multi-client tool that pulls each client's **QuickBooks Online General Ledger** through
+the QBO API and turns it into a CFO-style month-over-month dashboard. Connect a client's
+QuickBooks company once, then refresh their numbers whenever you want from the **Sync** tab.
 
 ## Metrics tracked
 
@@ -19,46 +18,77 @@ Each month, with month-over-month (MoM) change:
 
 ## How it works
 
-1. **Upload** a QuickBooks General Ledger export (`.csv`, `.xlsx`, `.xls`).
-   In QuickBooks: **Reports → General Ledger**, set the date range, then **Export**.
-2. The app parses the ledger, auto-detecting either grouped (account-header) or flat
-   (account-per-row) layouts and either a single signed **Amount** column or separate
-   **Debit/Credit** columns.
+1. **Connect a client**: the app sends you to Intuit's consent screen; pick the client's
+   company and approve. One connection per client, stored server-side.
+2. **Sync** pulls the GeneralLedger report (chunked by calendar year, full company history
+   by default) plus the Chart of Accounts, and stores the normalized ledger in SQLite.
 3. Every account is auto-classified into a category (Revenue, COGS, OpEx, Other
-   Income/Expense, Cash, or Ignore) using account-number and name heuristics. You can
-   **override any mapping** in the UI; metrics recompute instantly and the mapping is
-   saved locally.
-4. The dashboard shows latest-month KPIs with MoM deltas, trend charts, and a full
-   metric-by-month table.
+   Income/Expense, Cash, …) from its QBO **AccountType**, falling back to name heuristics.
+   You can **override any mapping** in the Accounts tab; overrides are saved per client and
+   always survive re-syncs.
+4. The dashboard shows latest-month KPIs with MoM deltas, trend charts, a full
+   metric-by-month table, and flux analysis — switch clients from the top bar.
 
 ### A note on sign conventions
 
-Ledger lines are normalized debit-positive. Because QuickBooks single-"Amount" exports
-don't always follow that convention for income accounts, the app auto-detects a
+The GL report's amounts are natural-signed (`subt_nat_amount`). The app auto-detects a
 per-category sign so revenue and expenses come out as positive magnitudes, then applies
-standard P&L arithmetic. Check the **Account mapping** panel (which shows each account's
-net) if any metric looks off.
+standard P&L arithmetic. Check the **Accounts** tab (which shows each account's net) if any
+metric looks off.
 
-## Storage
+### A note on the sync date range
 
-> The original ask was to store data in cookies, but a real general ledger far exceeds a
-> cookie's ~4 KB limit, so the app uses `localStorage` instead (same "browser-only, no
-> server" behavior, but holds megabytes). Use **Clear & upload new** to wipe it.
+The Cash metric is a running balance from the first synced transaction, so syncs default to
+the **full company history** (Intuit's `CompanyStartDate`). You can override the start date
+per client on the Sync tab, but a later start date will misstate cash.
 
-## Development
+## Setup
+
+### 1. Create an Intuit app
+
+1. Sign in at [developer.intuit.com](https://developer.intuit.com) and create an app with
+   the **Accounting** scope (`com.intuit.quickbooks.accounting`).
+2. Under the app's Keys & credentials, add the redirect URI
+   `http://localhost:5173/api/auth/callback` (Intuit allows plain http for localhost only).
+3. Copy the Client ID and Client Secret. Development keys work against **sandbox**
+   companies; switching to real client data requires the app's **Production** keys, an
+   HTTPS redirect URI, and `QBO_ENVIRONMENT=production`.
+
+### 2. Configure and run
 
 ```bash
+cp .env.example .env   # paste in QBO_CLIENT_ID / QBO_CLIENT_SECRET
 npm install
-npm run dev      # start the dev server
-npm run build    # type-check + production build
-npm run preview  # preview the production build
+npm run dev            # Vite (5173) + Express API (3001) together
 ```
 
-A sample export lives in [`samples/sample-general-ledger.csv`](samples/sample-general-ledger.csv);
-`samples/verify.mjs` runs the parse → classify → metrics pipeline over it
-(`npx tsx samples/verify.mjs`).
+Open http://localhost:5173, click **Connect a client to QuickBooks**, and run the first sync.
+
+### Other commands
+
+```bash
+npm test         # server unit tests (GL transform, account-map merge)
+npm run build    # type-check + production build
+npm start        # production mode: Express serves the built dist/ and the API
+npm run lint     # oxlint
+```
+
+## Storage & security
+
+- Per-client OAuth tokens and synced datasets live in `data/app.db` (SQLite, gitignored).
+  Intuit refresh tokens **rotate on every refresh**; the server persists the newest pair
+  automatically. If a client's refresh token expires (~100 days idle), the UI shows a
+  **Reconnect** prompt.
+- App credentials live in `.env` (gitignored). Never commit either.
+- The Express server has **no authentication of its own** — it's built to run locally or on
+  a trusted internal network. Put it behind at least a shared password / reverse-proxy auth
+  before exposing it anywhere shared. For extra hardening, token columns could be encrypted
+  at rest with a `TOKEN_ENCRYPTION_KEY` (not implemented).
 
 ## Tech
 
-React + TypeScript (Vite), [PapaParse](https://www.papaparse.com/) for CSV,
-[SheetJS](https://sheetjs.com/) for Excel, [Recharts](https://recharts.org/) for charts.
+- **Frontend**: React + TypeScript (Vite), [Recharts](https://recharts.org/) for charts.
+- **Server**: Express 5 + better-sqlite3, run with `tsx` (no build step); talks to the
+  QuickBooks Online v3 API (OAuth 2.0, GeneralLedger report, Account query).
+- The server imports `src/types.ts` and `src/lib/classify.ts` directly, so the ledger data
+  model and classification heuristics have a single source of truth.

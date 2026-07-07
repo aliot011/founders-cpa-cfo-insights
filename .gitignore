@@ -10,6 +10,10 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+
+# Server secrets and local database (QBO tokens live in data/)
+.env
+data/
 *.local
 
 # Editor directories and files

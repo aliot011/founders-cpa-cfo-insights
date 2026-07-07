@@ -149,6 +149,154 @@
   color: var(--muted);
 }
 
+/* ---- Client picker ---------------------------------------------------- */
+.client-list {
+  text-align: left;
+  margin-bottom: 28px;
+}
+.client-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.client-row:last-child {
+  border-bottom: none;
+}
+.client-open {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  border: none;
+  background: transparent;
+  padding: 8px 0;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+}
+.client-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.client-open:hover .client-name {
+  color: var(--accent-dark);
+}
+.client-meta {
+  font-size: 12px;
+  color: var(--muted);
+}
+.connect-btn {
+  display: inline-block;
+  text-decoration: none;
+}
+
+/* ---- Sync tab ---------------------------------------------------------- */
+.client-switcher {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+}
+.app-loading {
+  color: var(--muted);
+  text-align: center;
+  margin-top: 64px;
+}
+.sync-error {
+  margin: 0 0 20px;
+}
+.sync-status .sync-fact {
+  display: flex;
+  gap: 16px;
+  font-size: 14px;
+  padding: 4px 0;
+}
+.sync-fact-label {
+  width: 110px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 1.9;
+}
+.sync-notes {
+  margin: 12px 0 0;
+}
+.sync-empty {
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0;
+}
+.sync-setting {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.sync-setting-hint {
+  display: block;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted);
+  line-height: 1.5;
+  max-width: 520px;
+  margin-top: 4px;
+}
+.sync-setting-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sync-setting-controls input[type='date'] {
+  font-family: inherit;
+  font-size: 13px;
+  padding: 7px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+.sync-setting-note {
+  margin: 14px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+table.sync-log th,
+table.sync-log td {
+  text-align: left;
+}
+.sync-log-status.success {
+  color: var(--pos);
+  font-weight: 600;
+}
+.sync-log-status.error {
+  color: var(--neg);
+  font-weight: 600;
+}
+.sync-log-status.running {
+  color: var(--muted);
+}
+td.sync-log-msg {
+  white-space: normal;
+  min-width: 280px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.sync-disconnect {
+  color: var(--neg);
+}
+
 /* ---- Tabs ------------------------------------------------------------- */
 .tabs {
   display: flex;

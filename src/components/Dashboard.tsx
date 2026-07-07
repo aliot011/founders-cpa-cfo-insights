@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import type { AccountMap, Dataset } from '../types';
+import { useMemo, useState, type ReactNode } from 'react';
+import type { AccountMap, ClientDataset } from '../types';
 import { computeMetrics } from '../lib/metrics';
 import { formatMonth } from '../lib/format';
 import { KpiCards } from './KpiCards';
@@ -10,11 +10,14 @@ import { VarianceAnalysis } from './VarianceAnalysis';
 import { VendorSpend } from './VendorSpend';
 
 interface Props {
-  dataset: Dataset;
+  dataset: ClientDataset;
   onMapChange: (map: AccountMap) => void;
+  /** The Sync tab's content, provided by App (it owns client/sync state). */
+  syncTab: ReactNode;
+  initialTab?: TabId;
 }
 
-type TabId = 'summary' | 'kpis' | 'detail' | 'variance' | 'vendors' | 'accounts';
+export type TabId = 'summary' | 'kpis' | 'detail' | 'variance' | 'vendors' | 'accounts' | 'sync';
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'summary', label: 'Summary' },
@@ -23,10 +26,11 @@ const TABS: { id: TabId; label: string }[] = [
   { id: 'variance', label: 'Flux' },
   { id: 'vendors', label: 'Vendor Spend' },
   { id: 'accounts', label: 'Accounts' },
+  { id: 'sync', label: 'Sync' },
 ];
 
-export function Dashboard({ dataset, onMapChange }: Props) {
-  const [tab, setTab] = useState<TabId>('summary');
+export function Dashboard({ dataset, onMapChange, syncTab, initialTab }: Props) {
+  const [tab, setTab] = useState<TabId>(initialTab ?? 'summary');
 
   const metrics = useMemo(
     () => computeMetrics(dataset.entries, dataset.accountMap),
@@ -34,8 +38,15 @@ export function Dashboard({ dataset, onMapChange }: Props) {
   );
 
   const months = useMemo(() => metrics.map((m) => m.month), [metrics]);
+  const hasData = dataset.entries.length > 0;
   const hasRevenue = metrics.some((m) => m.revenue !== 0);
   const latestMonthLabel = metrics.length > 0 ? formatMonth(metrics[metrics.length - 1].month) : 'the latest month';
+
+  const emptyCallout = (
+    <div className="callout">
+      No data has been synced from QuickBooks yet. Open the <strong>Sync</strong> tab and run the first sync.
+    </div>
+  );
 
   return (
     <>
@@ -59,15 +70,18 @@ export function Dashboard({ dataset, onMapChange }: Props) {
             title="Summary"
             subtitle="A twelve-month view of revenue, net income, and cash in a single chart, so you can read the trajectory of the business at a glance."
           />
-          {!hasRevenue && (
+          {!hasData && emptyCallout}
+          {hasData && !hasRevenue && (
             <div className="callout">
               No revenue was detected. Open the <strong>Accounts</strong> tab and set your income accounts to{' '}
               <em>Revenue</em>, since most other metrics depend on it.
             </div>
           )}
-          <div className="section">
-            <Charts metrics={metrics} />
-          </div>
+          {hasData && (
+            <div className="section">
+              <Charts metrics={metrics} />
+            </div>
+          )}
         </>
       )}
 
@@ -77,9 +91,12 @@ export function Dashboard({ dataset, onMapChange }: Props) {
             title="Key Metrics"
             subtitle={`Headline numbers for ${latestMonthLabel} with month-over-month change, so you can quickly see what moved and by how much.`}
           />
-          <div className="section">
-            <KpiCards metrics={metrics} />
-          </div>
+          {!hasData && emptyCallout}
+          {hasData && (
+            <div className="section">
+              <KpiCards metrics={metrics} />
+            </div>
+          )}
         </>
       )}
 
@@ -89,21 +106,27 @@ export function Dashboard({ dataset, onMapChange }: Props) {
             title="Detail"
             subtitle="Every metric by month, quarter, or year with a running total, giving you the full financial picture and how each line trends over time."
           />
-          <div className="section">
-            <MetricsTable metrics={metrics} />
-          </div>
+          {!hasData && emptyCallout}
+          {hasData && (
+            <div className="section">
+              <MetricsTable metrics={metrics} />
+            </div>
+          )}
         </>
       )}
 
-      {tab === 'variance' && months.length > 0 && (
+      {tab === 'variance' && (
         <>
           <PageHeader
             title="Flux Analysis"
             subtitle="Compares a period against the one before it across the P&L and balance sheet, so you can explain what changed and how it affected cash."
           />
-          <div className="section">
-            <VarianceAnalysis entries={dataset.entries} accountMap={dataset.accountMap} months={months} />
-          </div>
+          {months.length === 0 && emptyCallout}
+          {months.length > 0 && (
+            <div className="section">
+              <VarianceAnalysis entries={dataset.entries} accountMap={dataset.accountMap} months={months} />
+            </div>
+          )}
         </>
       )}
 
@@ -113,9 +136,12 @@ export function Dashboard({ dataset, onMapChange }: Props) {
             title="Vendor Spend"
             subtitle="A tiered pivot of spend across periods for the accounts you choose — vendors broken down by account, or accounts broken down by vendor — so you can see exactly who you pay and how that spend is trending."
           />
-          <div className="section">
-            <VendorSpend entries={dataset.entries} accountMap={dataset.accountMap} />
-          </div>
+          {!hasData && emptyCallout}
+          {hasData && (
+            <div className="section">
+              <VendorSpend entries={dataset.entries} accountMap={dataset.accountMap} />
+            </div>
+          )}
         </>
       )}
 
@@ -125,14 +151,27 @@ export function Dashboard({ dataset, onMapChange }: Props) {
             title="Accounts"
             subtitle="Review and correct how each ledger account is categorized. Every metric on the other tabs is calculated from this mapping, so accuracy here drives everything."
           />
-          <div className="section">
-            <AccountMapping
-              entries={dataset.entries}
-              accountMap={dataset.accountMap}
-              onChange={onMapChange}
-              open
-            />
-          </div>
+          {!hasData && emptyCallout}
+          {hasData && (
+            <div className="section">
+              <AccountMapping
+                entries={dataset.entries}
+                accountMap={dataset.accountMap}
+                onChange={onMapChange}
+                open
+              />
+            </div>
+          )}
+        </>
+      )}
+
+      {tab === 'sync' && (
+        <>
+          <PageHeader
+            title="Sync"
+            subtitle="Pull the latest General Ledger from QuickBooks whenever you want fresh numbers, adjust the date range, and review past syncs."
+          />
+          {syncTab}
         </>
       )}
     </>

@@ -57,22 +57,46 @@ export interface LedgerEntry {
 /** account name -> category. User-editable, persisted. */
 export type AccountMap = Record<string, Category>;
 
-/** Result of parsing an uploaded file. */
-export interface ParseResult {
-  entries: LedgerEntry[];
-  accounts: string[];
-  /** Non-fatal notes surfaced to the user (skipped rows, sign detection, etc.). */
-  notes: string[];
-  fileName: string;
+/** One connected QuickBooks company, as listed by the API. */
+export interface ClientSummary {
+  realmId: string;
+  companyName: string;
+  status: 'ok' | 'needs_reauth';
+  connectedAt: string;
+  lastSyncedAt: string | null;
+  /** User override for where syncs start; null = full company history. */
+  syncStartDate: string | null;
+  companyStartDate: string | null;
 }
 
-/** The full persisted dataset. */
-export interface Dataset {
+/** A client's synced dataset, as served by the API. */
+export interface ClientDataset {
   entries: LedgerEntry[];
   accountMap: AccountMap;
-  fileName: string;
-  importedAt: string;
+  startDate: string;
+  endDate: string;
+  /** Non-fatal notes from the last sync (new accounts, skipped rows, etc.). */
   notes: string[];
+  lastSyncedAt: string;
+  companyName: string;
+}
+
+/** Result of a completed sync. */
+export interface SyncResult {
+  lastSyncedAt: string;
+  entryCount: number;
+  accountCount: number;
+  notes: string[];
+}
+
+/** One row of a client's sync history. */
+export interface SyncLogEntry {
+  id: number;
+  startedAt: string;
+  finishedAt: string | null;
+  status: 'running' | 'success' | 'error';
+  entryCount: number | null;
+  message: string | null;
 }
 
 /** Every metric we compute per month. */

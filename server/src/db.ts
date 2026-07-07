@@ -1,0 +1,228 @@
+import Database from 'better-sqlite3';
+import { mkdirSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import type { AccountMap, LedgerEntry } from '../../src/types.ts';
+
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const dataDir = path.join(repoRoot, 'data');
+mkdirSync(dataDir, { recursive: true });
+
+export const db = new Database(path.join(dataDir, 'app.db'));
+db.pragma('journal_mode = WAL');
+db.pragma('foreign_keys = ON');
+
+db.exec(`
+CREATE TABLE IF NOT EXISTS connections (
+  realm_id TEXT PRIMARY KEY,
+  company_name TEXT NOT NULL,
+  access_token TEXT NOT NULL,
+  refresh_token TEXT NOT NULL,
+  access_token_expires_at TEXT NOT NULL,
+  refresh_token_expires_at TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'ok',
+  company_start_date TEXT,
+  sync_start_date TEXT,
+  connected_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS datasets (
+  realm_id TEXT PRIMARY KEY REFERENCES connections(realm_id) ON DELETE CASCADE,
+  entries_json TEXT NOT NULL,
+  account_map_json TEXT NOT NULL,
+  start_date TEXT NOT NULL,
+  end_date TEXT NOT NULL,
+  notes_json TEXT NOT NULL DEFAULT '[]',
+  last_synced_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS sync_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  realm_id TEXT NOT NULL,
+  started_at TEXT NOT NULL,
+  finished_at TEXT,
+  status TEXT NOT NULL,
+  entry_count INTEGER,
+  message TEXT
+);
+`);
+
+export interface ConnectionRow {
+  realm_id: string;
+  company_name: string;
+  access_token: string;
+  refresh_token: string;
+  access_token_expires_at: string;
+  refresh_token_expires_at: string;
+  status: 'ok' | 'needs_reauth';
+  company_start_date: string | null;
+  sync_start_date: string | null;
+  connected_at: string;
+  updated_at: string;
+}
+
+export interface DatasetRow {
+  realm_id: string;
+  entries_json: string;
+  account_map_json: string;
+  start_date: string;
+  end_date: string;
+  notes_json: string;
+  last_synced_at: string;
+}
+
+export interface SyncLogRow {
+  id: number;
+  realm_id: string;
+  started_at: string;
+  finished_at: string | null;
+  status: 'running' | 'success' | 'error';
+  entry_count: number | null;
+  message: string | null;
+}
+
+export function getConnection(realmId: string): ConnectionRow | undefined {
+  return db.prepare('SELECT * FROM connections WHERE realm_id = ?').get(realmId) as ConnectionRow | undefined;
+}
+
+export function listConnections(): ConnectionRow[] {
+  return db.prepare('SELECT * FROM connections ORDER BY company_name').all() as ConnectionRow[];
+}
+
+export interface TokenSet {
+  accessToken: string;
+  refreshToken: string;
+  accessTokenExpiresAt: string; // ISO
+  refreshTokenExpiresAt: string; // ISO
+}
+
+export function upsertConnection(args: {
+  realmId: string;
+  companyName: string;
+  tokens: TokenSet;
+  companyStartDate: string | null;
+}): void {
+  const now = new Date().toISOString();
+  db.prepare(
+    `INSERT INTO connections
+       (realm_id, company_name, access_token, refresh_token,
+        access_token_expires_at, refresh_token_expires_at,
+        status, company_start_date, connected_at, updated_at)
+     VALUES (@realmId, @companyName, @accessToken, @refreshToken,
+             @accessTokenExpiresAt, @refreshTokenExpiresAt,
+             'ok', @companyStartDate, @now, @now)
+     ON CONFLICT(realm_id) DO UPDATE SET
+       company_name = @companyName,
+       access_token = @accessToken,
+       refresh_token = @refreshToken,
+       access_token_expires_at = @accessTokenExpiresAt,
+       refresh_token_expires_at = @refreshTokenExpiresAt,
+       status = 'ok',
+       company_start_date = @companyStartDate,
+       updated_at = @now`,
+  ).run({ ...args.tokens, realmId: args.realmId, companyName: args.companyName, companyStartDate: args.companyStartDate, now });
+}
+
+/** Update company metadata without touching tokens (they may have rotated since connect). */
+export function updateCompanyInfo(realmId: string, companyName: string, companyStartDate: string | null): void {
+  db.prepare('UPDATE connections SET company_name = ?, company_start_date = ?, updated_at = ? WHERE realm_id = ?').run(
+    companyName,
+    companyStartDate,
+    new Date().toISOString(),
+    realmId,
+  );
+}
+
+/** Persist rotated tokens. Called on every refresh — rotation makes this mandatory. */
+export function saveTokens(realmId: string, tokens: TokenSet): void {
+  db.prepare(
+    `UPDATE connections SET
+       access_token = @accessToken,
+       refresh_token = @refreshToken,
+       access_token_expires_at = @accessTokenExpiresAt,
+       refresh_token_expires_at = @refreshTokenExpiresAt,
+       status = 'ok',
+       updated_at = @now
+     WHERE realm_id = @realmId`,
+  ).run({ ...tokens, realmId, now: new Date().toISOString() });
+}
+
+export function markNeedsReauth(realmId: string): void {
+  db.prepare(`UPDATE connections SET status = 'needs_reauth', updated_at = ? WHERE realm_id = ?`).run(
+    new Date().toISOString(),
+    realmId,
+  );
+}
+
+export function setSyncStartDate(realmId: string, syncStartDate: string | null): void {
+  db.prepare('UPDATE connections SET sync_start_date = ?, updated_at = ? WHERE realm_id = ?').run(
+    syncStartDate,
+    new Date().toISOString(),
+    realmId,
+  );
+}
+
+export function deleteConnection(realmId: string): void {
+  db.prepare('DELETE FROM connections WHERE realm_id = ?').run(realmId);
+}
+
+export function getDataset(realmId: string): DatasetRow | undefined {
+  return db.prepare('SELECT * FROM datasets WHERE realm_id = ?').get(realmId) as DatasetRow | undefined;
+}
+
+export function upsertDataset(args: {
+  realmId: string;
+  entries: LedgerEntry[];
+  accountMap: AccountMap;
+  startDate: string;
+  endDate: string;
+  notes: string[];
+}): string {
+  const lastSyncedAt = new Date().toISOString();
+  db.prepare(
+    `INSERT INTO datasets (realm_id, entries_json, account_map_json, start_date, end_date, notes_json, last_synced_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(realm_id) DO UPDATE SET
+       entries_json = excluded.entries_json,
+       account_map_json = excluded.account_map_json,
+       start_date = excluded.start_date,
+       end_date = excluded.end_date,
+       notes_json = excluded.notes_json,
+       last_synced_at = excluded.last_synced_at`,
+  ).run(
+    args.realmId,
+    JSON.stringify(args.entries),
+    JSON.stringify(args.accountMap),
+    args.startDate,
+    args.endDate,
+    JSON.stringify(args.notes),
+    lastSyncedAt,
+  );
+  return lastSyncedAt;
+}
+
+export function saveAccountMap(realmId: string, accountMap: AccountMap): void {
+  db.prepare('UPDATE datasets SET account_map_json = ? WHERE realm_id = ?').run(JSON.stringify(accountMap), realmId);
+}
+
+export function startSyncLog(realmId: string): number {
+  const result = db
+    .prepare(`INSERT INTO sync_log (realm_id, started_at, status) VALUES (?, ?, 'running')`)
+    .run(realmId, new Date().toISOString());
+  return Number(result.lastInsertRowid);
+}
+
+export function finishSyncLog(id: number, status: 'success' | 'error', entryCount: number | null, message: string | null): void {
+  db.prepare('UPDATE sync_log SET finished_at = ?, status = ?, entry_count = ?, message = ? WHERE id = ?').run(
+    new Date().toISOString(),
+    status,
+    entryCount,
+    message,
+    id,
+  );
+}
+
+export function listSyncLog(realmId: string, limit: number): SyncLogRow[] {
+  return db
+    .prepare('SELECT * FROM sync_log WHERE realm_id = ? ORDER BY id DESC LIMIT ?')
+    .all(realmId, limit) as SyncLogRow[];
+}

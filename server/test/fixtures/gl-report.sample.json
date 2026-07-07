@@ -1,0 +1,213 @@
+{
+  "Header": {
+    "ReportName": "GeneralLedger",
+    "Option": [{ "Name": "NoReportData", "Value": "false" }],
+    "ReportBasis": "Accrual",
+    "StartPeriod": "2025-01-01",
+    "EndPeriod": "2025-03-31",
+    "Currency": "USD",
+    "Time": "2025-04-01T09:11:52-08:00"
+  },
+  "Columns": {
+    "Column": [
+      { "ColType": "account_name", "ColTitle": "Account" },
+      { "ColType": "tx_date", "ColTitle": "Date" },
+      { "ColType": "txn_type", "ColTitle": "Transaction Type" },
+      { "ColType": "name", "ColTitle": "Name" },
+      { "ColType": "vend_name", "ColTitle": "Vendor" },
+      { "ColType": "cust_name", "ColTitle": "Customer" },
+      { "ColType": "memo", "ColTitle": "Memo/Description" },
+      { "ColType": "subt_nat_amount", "ColTitle": "Amount" }
+    ]
+  },
+  "Rows": {
+    "Row": [
+      {
+        "Header": {
+          "ColData": [
+            { "id": "82", "value": "Design income" },
+            { "value": "" }, { "value": "" }, { "value": "" },
+            { "value": "" }, { "value": "" }, { "value": "" }, { "value": "" }
+          ]
+        },
+        "Rows": {
+          "Row": [
+            {
+              "ColData": [
+                { "id": "82", "value": "Design income" },
+                { "value": "2025-01-15" },
+                { "value": "Invoice" },
+                { "value": "Amy's Bird Sanctuary" },
+                { "value": "" },
+                { "value": "Amy's Bird Sanctuary" },
+                { "value": "Logo design" },
+                { "value": "225.00" }
+              ],
+              "type": "Data"
+            },
+            {
+              "ColData": [
+                { "id": "82", "value": "Design income" },
+                { "value": "2025-02-03" },
+                { "value": "Sales Receipt" },
+                { "value": "Cool Cars" },
+                { "value": "" },
+                { "value": "Cool Cars" },
+                { "value": "" },
+                { "value": "750.00" }
+              ],
+              "type": "Data"
+            }
+          ]
+        },
+        "type": "Section",
+        "Summary": {
+          "ColData": [
+            { "value": "Total for Design income" },
+            { "value": "" }, { "value": "" }, { "value": "" },
+            { "value": "" }, { "value": "" }, { "value": "" },
+            { "value": "975.00" }
+          ]
+        }
+      },
+      {
+        "Header": {
+          "ColData": [
+            { "id": "35", "value": "Checking" },
+            { "value": "" }, { "value": "" }, { "value": "" },
+            { "value": "" }, { "value": "" }, { "value": "" }, { "value": "" }
+          ]
+        },
+        "Rows": {
+          "Row": [
+            {
+              "ColData": [
+                { "value": "Beginning Balance" },
+                { "value": "" }, { "value": "" }, { "value": "" },
+                { "value": "" }, { "value": "" }, { "value": "" },
+                { "value": "1201.00" }
+              ],
+              "type": "Data"
+            },
+            {
+              "ColData": [
+                { "id": "35", "value": "Checking" },
+                { "value": "2025-01-20" },
+                { "value": "Payment" },
+                { "value": "Amy's Bird Sanctuary" },
+                { "value": "" },
+                { "value": "Amy's Bird Sanctuary" },
+                { "value": "" },
+                { "value": "225.00" }
+              ],
+              "type": "Data"
+            },
+            {
+              "ColData": [
+                { "id": "35", "value": "Checking" },
+                { "value": "2025-02-10" },
+                { "value": "Expense" },
+                { "value": "PG&E" },
+                { "value": "PG&E" },
+                { "value": "" },
+                { "value": "Utilities bill" },
+                { "value": "-86.44" }
+              ],
+              "type": "Data"
+            }
+          ]
+        },
+        "type": "Section",
+        "Summary": {
+          "ColData": [
+            { "value": "Total for Checking" },
+            { "value": "" }, { "value": "" }, { "value": "" },
+            { "value": "" }, { "value": "" }, { "value": "" },
+            { "value": "1339.56" }
+          ]
+        }
+      },
+      {
+        "Header": {
+          "ColData": [
+            { "id": "48", "value": "Job Materials" },
+            { "value": "" }, { "value": "" }, { "value": "" },
+            { "value": "" }, { "value": "" }, { "value": "" }, { "value": "" }
+          ]
+        },
+        "Rows": {
+          "Row": [
+            {
+              "Header": {
+                "ColData": [
+                  { "value": "Plants and Soil" },
+                  { "value": "" }, { "value": "" }, { "value": "" },
+                  { "value": "" }, { "value": "" }, { "value": "" }, { "value": "" }
+                ]
+              },
+              "Rows": {
+                "Row": [
+                  {
+                    "ColData": [
+                      { "id": "49", "value": "Landscaping Services:Job Materials:Plants and Soil" },
+                      { "value": "2025-03-05" },
+                      { "value": "Bill" },
+                      { "value": "Norton Lumber" },
+                      { "value": "Norton Lumber" },
+                      { "value": "" },
+                      { "value": "Soil order" },
+                      { "value": "131.25" }
+                    ],
+                    "type": "Data"
+                  },
+                  {
+                    "ColData": [
+                      { "id": "49", "value": "Landscaping Services:Job Materials:Plants and Soil" },
+                      { "value": "2025-03-18" },
+                      { "value": "Vendor Credit" },
+                      { "value": "Norton Lumber" },
+                      { "value": "Norton Lumber" },
+                      { "value": "" },
+                      { "value": "Returned soil" },
+                      { "value": "-24.36" }
+                    ],
+                    "type": "Data"
+                  }
+                ]
+              },
+              "type": "Section",
+              "Summary": {
+                "ColData": [
+                  { "value": "Total for Plants and Soil" },
+                  { "value": "" }, { "value": "" }, { "value": "" },
+                  { "value": "" }, { "value": "" }, { "value": "" },
+                  { "value": "106.89" }
+                ]
+              }
+            }
+          ]
+        },
+        "type": "Section",
+        "Summary": {
+          "ColData": [
+            { "value": "Total for Job Materials" },
+            { "value": "" }, { "value": "" }, { "value": "" },
+            { "value": "" }, { "value": "" }, { "value": "" },
+            { "value": "106.89" }
+          ]
+        }
+      },
+      {
+        "type": "Section",
+        "Summary": {
+          "ColData": [
+            { "value": "accountsTotal for Landscaping Services with sub-accounts." },
+            { "value": "" }, { "value": "" }, { "value": "" },
+            { "value": "" }, { "value": "" }, { "value": "" },
+            { "value": "106.89" }
+          ]
+        }
+      }
+    ]
+  }
+}

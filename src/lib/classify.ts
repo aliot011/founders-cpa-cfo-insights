@@ -1,4 +1,4 @@
-import type { Category } from '../types';
+import type { Category } from '../types.ts';
 
 /**
  * Best-effort classification of a QuickBooks account name into a P&L / cash /
