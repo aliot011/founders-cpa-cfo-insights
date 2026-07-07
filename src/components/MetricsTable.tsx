@@ -8,6 +8,9 @@ interface Props {
 /** Subtotal / total rows that get a rule line above them. */
 const RULED = new Set<MetricKey>(['grossProfit', 'operatingProfit', 'netIncome']);
 
+/** Total rows shown in bold (including their label). */
+const TOTAL_LINES = new Set<MetricKey>(['grossProfit', 'operatingProfit', 'netIncome', 'cash']);
+
 /** Column totals: flows sum, margins recompute on totals, cash = ending balance. */
 function computeTotals(metrics: MonthlyMetrics[]): Record<MetricKey, number> {
   const sum = (k: MetricKey) => metrics.reduce((t, m) => t + (isFinite(m[k]) ? m[k] : 0), 0);
@@ -54,9 +57,12 @@ export function MetricsTable({ metrics }: Props) {
           </thead>
           <tbody>
             {METRIC_DEFS.map((def) => {
-              const ruled = RULED.has(def.key);
               const isMargin = def.format === 'percent';
-              const trClass = [ruled ? 'metric-rule' : '', isMargin ? 'metric-margin' : '']
+              const trClass = [
+                RULED.has(def.key) ? 'metric-rule' : '',
+                TOTAL_LINES.has(def.key) ? 'metric-total' : '',
+                isMargin ? 'metric-margin' : '',
+              ]
                 .filter(Boolean)
                 .join(' ');
               const fmt = (v: number) => (def.format === 'percent' ? formatPercent(v) : formatCurrency(v));
