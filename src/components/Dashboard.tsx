@@ -33,10 +33,6 @@ export function Dashboard({ dataset, onMapChange }: Props) {
 
   const months = useMemo(() => metrics.map((m) => m.month), [metrics]);
   const hasRevenue = metrics.some((m) => m.revenue !== 0);
-  const range =
-    metrics.length > 0
-      ? `${formatMonth(metrics[0].month)} – ${formatMonth(metrics[metrics.length - 1].month)}`
-      : '';
 
   return (
     <>
@@ -52,9 +48,6 @@ export function Dashboard({ dataset, onMapChange }: Props) {
             {t.label}
           </button>
         ))}
-        <span className="tabs-meta hint">
-          {metrics.length} month{metrics.length === 1 ? '' : 's'} · {range}
-        </span>
       </nav>
 
       {tab === 'summary' && (
