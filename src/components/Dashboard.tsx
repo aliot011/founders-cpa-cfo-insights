@@ -13,10 +13,11 @@ interface Props {
   onMapChange: (map: AccountMap) => void;
 }
 
-type TabId = 'summary' | 'detail' | 'variance' | 'accounts';
+type TabId = 'summary' | 'kpis' | 'detail' | 'variance' | 'accounts';
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'summary', label: 'Summary' },
+  { id: 'kpis', label: 'KPIs' },
   { id: 'detail', label: 'Detail' },
   { id: 'variance', label: 'Flux' },
   { id: 'accounts', label: 'Accounts' },
@@ -68,7 +69,11 @@ export function Dashboard({ dataset, onMapChange }: Props) {
           <div className="section">
             <Charts metrics={metrics} />
           </div>
+        </>
+      )}
 
+      {tab === 'kpis' && (
+        <>
           <div className="section-head">
             <div>
               <h2>Latest month</h2>

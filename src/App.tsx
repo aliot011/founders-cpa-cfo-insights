@@ -35,7 +35,6 @@ export default function App() {
           <div className="brand-mark">F</div>
           <div>
             <div className="brand-title">Founders CPA · CFO Insights</div>
-            <div className="brand-sub">Month-over-month general ledger analysis</div>
           </div>
         </div>
         {dataset && (
