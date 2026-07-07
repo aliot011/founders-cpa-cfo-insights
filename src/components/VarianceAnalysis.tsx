@@ -40,21 +40,23 @@ function signClass(n: number | null): string {
 
 export function VarianceAnalysis({ entries, accountMap, months }: Props) {
   const last = months[months.length - 1];
-  const prev = months.length > 1 ? months[months.length - 2] : last;
   const [gran, setGran] = useState<Granularity>('month');
-  const [p1End, setP1End] = useState(prev);
-  const [p2End, setP2End] = useState(last);
+  const [asOf, setAsOf] = useState(last);
 
-  const p1 = periodFor(p1End, gran);
-  const p2 = periodFor(p2End, gran);
+  // Current period ends at `asOf`; the prior corresponding period is the
+  // immediately preceding period of the same length (MoM / QoQ / YoY).
+  const span = GRANULARITY[gran].span;
+  const priorEnd = shiftMonth(asOf, -span);
+  const p2 = periodFor(asOf, gran);
+  const p1 = periodFor(priorEnd, gran);
 
   const report = useMemo(
     () => computeVariance(entries, accountMap, p1, p2),
     [entries, accountMap, p1.start, p1.end, p2.start, p2.end],
   );
 
-  const h1 = periodLabel(p1End, gran);
-  const h2 = periodLabel(p2End, gran);
+  const h1 = periodLabel(priorEnd, gran);
+  const h2 = periodLabel(asOf, gran);
 
   return (
     <div className="panel">
@@ -66,13 +68,10 @@ export function VarianceAnalysis({ entries, accountMap, months }: Props) {
               <option key={g} value={g}>{GRANULARITY[g].label}</option>
             ))}
           </select>
-          <select value={p1End} onChange={(e) => setP1End(e.target.value)}>
+          <select value={asOf} onChange={(e) => setAsOf(e.target.value)}>
             {months.map((m) => <option key={m} value={m}>{formatMonth(m)}</option>)}
           </select>
-          <span className="pp-vs">vs</span>
-          <select value={p2End} onChange={(e) => setP2End(e.target.value)}>
-            {months.map((m) => <option key={m} value={m}>{formatMonth(m)}</option>)}
-          </select>
+          <span className="muted" style={{ fontSize: 12 }}>vs {h1}</span>
         </div>
       </div>
 
@@ -145,9 +144,9 @@ export function VarianceAnalysis({ entries, accountMap, months }: Props) {
             </div>
             <p className="var-caption">
               <strong>Cash Impact</strong> uses the indirect method: an increase in an asset uses cash
-              (negative); an increase in a liability or equity account is a source of cash (positive). When{' '}
-              {h2} immediately follows {h1}, Net Income ({formatCurrency(report.netIncomeP2)}) + net B/S cash
-              impact ({signed(report.bsCashImpactTotal)}) reconciles to the change in cash (
+              (negative); an increase in a liability or equity account is a source of cash (positive). For{' '}
+              {h2}, Net Income ({formatCurrency(report.netIncomeP2)}) + net B/S cash impact (
+              {signed(report.bsCashImpactTotal)}) reconciles to the change in cash (
               {signed(report.cashActualChange)}). Balance columns are cumulative within the loaded ledger.
             </p>
           </>
