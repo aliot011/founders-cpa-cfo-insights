@@ -76,10 +76,7 @@ export function Dashboard({ dataset, onMapChange }: Props) {
         <>
           <div className="section-head">
             <div>
-              <h2>Latest month</h2>
-              <span className="hint">
-                {metrics.length > 0 && formatMonth(metrics[metrics.length - 1].month)} · vs. prior month
-              </span>
+              <h2>{metrics.length > 0 ? formatMonth(metrics[metrics.length - 1].month) : 'KPIs'}</h2>
             </div>
           </div>
           <div className="section">
