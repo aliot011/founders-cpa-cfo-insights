@@ -90,15 +90,17 @@ export function MetricsTable({ metrics }: Props) {
     <div className="panel">
       <div className="panel-head">
         <h3>All metrics by period</h3>
-        <select
-          className="pp-gran"
-          value={gran}
-          onChange={(e) => setGran(e.target.value as Granularity)}
-        >
-          {(Object.keys(GRAN_LABELS) as Granularity[]).map((g) => (
-            <option key={g} value={g}>{GRAN_LABELS[g]}</option>
-          ))}
-        </select>
+        <div className="period-picker">
+          <select
+            className="pp-gran"
+            value={gran}
+            onChange={(e) => setGran(e.target.value as Granularity)}
+          >
+            {(Object.keys(GRAN_LABELS) as Granularity[]).map((g) => (
+              <option key={g} value={g}>{GRAN_LABELS[g]}</option>
+            ))}
+          </select>
+        </div>
       </div>
       <div className="table-scroll">
         <table className="metrics detail num">
