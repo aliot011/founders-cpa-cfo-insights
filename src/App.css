@@ -325,12 +325,13 @@ table.metrics td {
 table.metrics thead th {
   position: sticky;
   top: 0;
-  background: var(--surface);
-  color: var(--muted);
+  background: var(--navy);
+  color: #fff;
   font-weight: 600;
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.03em;
+  border-bottom: 1px solid var(--navy);
   z-index: 1;
 }
 table.metrics th.metric-name,
@@ -341,6 +342,11 @@ table.metrics td.metric-name {
   background: var(--surface);
   font-weight: 600;
   color: var(--ink);
+}
+/* The sticky header corner cell also gets the navy treatment. */
+table.metrics thead th.metric-name {
+  background: var(--navy);
+  color: #fff;
 }
 table.metrics tbody tr:hover td {
   background: #fbfcfb;
@@ -382,7 +388,8 @@ table.detail .col-total {
   background: #fbfcfb;
 }
 table.detail thead th.col-total {
-  background: var(--surface);
+  background: var(--navy);
+  color: #fff;
 }
 
 /* ---- Charts ---------------------------------------------------------- */
@@ -484,13 +491,6 @@ table.mapping select {
   letter-spacing: 0.05em;
   color: var(--muted);
   margin: 0 0 10px;
-}
-/* Coloured header for the variance tables. */
-table.variance thead th,
-table.variance thead th.metric-name {
-  background: var(--accent-dark);
-  color: #eaf5ef;
-  border-bottom: 1px solid var(--accent-dark);
 }
 table.variance td.metric-name.var-indent {
   padding-left: 24px;
