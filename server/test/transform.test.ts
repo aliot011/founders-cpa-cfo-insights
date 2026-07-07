@@ -13,33 +13,41 @@ function loadFixture(name: string): GeneralLedgerReport {
 }
 
 test('transformReport flattens data rows across nested sections', () => {
+  // Fixture captured from a live sandbox response (pruned): columns are keyed
+  // by MetaData ColKey with generic ColTypes, and column order differs from
+  // the request.
   const { entries, skipped } = transformReport(loadFixture('gl-report.sample.json'));
 
-  assert.equal(entries.length, 6);
+  assert.equal(entries.length, 12);
   assert.equal(skipped, 1); // the Beginning Balance row
 
   const first = entries[0];
   assert.deepEqual(first, {
-    date: '2025-01-15',
-    month: '2025-01',
-    account: 'Design income',
-    amount: 225,
-    name: "Amy's Bird Sanctuary",
-    vendor: undefined,
-    customer: "Amy's Bird Sanctuary",
-    memo: 'Logo design',
-    transactionType: 'Invoice',
+    date: '2026-01-06',
+    month: '2026-01',
+    account: 'Checking',
+    amount: -100,
+    name: 'Tony Rondonuwu',
+    vendor: 'Tony Rondonuwu',
+    customer: undefined,
+    memo: undefined,
+    transactionType: 'Check',
   });
 
-  // Sub-account rows take the fully-qualified path from their own column.
-  const subAccount = entries.filter((e) => e.account === 'Landscaping Services:Job Materials:Plants and Soil');
-  assert.equal(subAccount.length, 2);
-  assert.equal(subAccount[0].vendor, 'Norton Lumber');
-  assert.equal(subAccount[1].amount, -24.36);
+  // Sub-account rows take the fully-qualified path from their own column,
+  // and vendor + customer can coexist on one line (billable job expense).
+  const subAccount = entries.filter((e) => e.account === 'Job Expenses:Job Materials:Decks and Patios');
+  assert.equal(subAccount.length, 3);
+  assert.equal(subAccount[1].vendor, 'Norton Lumber and Building Materials');
+  assert.equal(subAccount[1].customer, 'Travis Waldron');
 
   // Natural signs pass through untouched (metrics normalizes downstream).
-  const expense = entries.find((e) => e.memo === 'Utilities bill');
-  assert.equal(expense?.amount, -86.44);
+  const expense = entries.find((e) => e.name === "Bob's Burger Joint");
+  assert.equal(expense?.amount, -5.66);
+
+  // Customer-only income rows keep the customer column.
+  const invoice = entries.find((e) => e.transactionType === 'Invoice');
+  assert.equal(invoice?.customer, 'Paulsen Medical Supplies');
 
   // Summary rows never become entries.
   assert.ok(entries.every((e) => !e.account.startsWith('Total')));
@@ -76,8 +84,34 @@ test('transformReport falls back to the section header when the account column i
   assert.equal(entries[0].account, 'Pest Control Services');
 });
 
-test('transformReport indexes columns by ColType, not position', () => {
-  // Same data, shuffled column order (e.g. class tracking changes the layout).
+test('transformReport indexes columns by MetaData ColKey, not position or ColType', () => {
+  // Live shape: generic ColTypes, key in MetaData, shuffled order. Amounts may
+  // carry thousands separators.
+  const report: GeneralLedgerReport = {
+    Columns: {
+      Column: [
+        { ColType: 'Date', ColTitle: 'Date', MetaData: [{ Name: 'ColKey', Value: 'tx_date' }] },
+        { ColType: 'Money', ColTitle: 'Amount', MetaData: [{ Name: 'ColKey', Value: 'subt_nat_amount' }] },
+        { ColType: 'String', ColTitle: 'Account', MetaData: [{ Name: 'ColKey', Value: 'account_name' }] },
+      ],
+    },
+    Rows: {
+      Row: [
+        {
+          type: 'Data',
+          ColData: [{ value: '2025-06-02' }, { value: '-1,212.50' }, { value: 'Bank Charges' }],
+        },
+      ],
+    },
+  };
+  const { entries } = transformReport(report);
+  assert.deepEqual(
+    { date: entries[0].date, amount: entries[0].amount, account: entries[0].account },
+    { date: '2025-06-02', amount: -1212.5, account: 'Bank Charges' },
+  );
+});
+
+test('transformReport falls back to ColType keys for older report shapes', () => {
   const report: GeneralLedgerReport = {
     Columns: {
       Column: [
@@ -96,10 +130,19 @@ test('transformReport indexes columns by ColType, not position', () => {
     },
   };
   const { entries } = transformReport(report);
-  assert.deepEqual(
-    { date: entries[0].date, amount: entries[0].amount, account: entries[0].account },
-    { date: '2025-06-02', amount: -12.5, account: 'Bank Charges' },
-  );
+  assert.equal(entries[0].amount, -12.5);
+});
+
+test('transformReport throws when the response lacks date/amount columns', () => {
+  // e.g. the request forgot subt_nat_amount — better a loud sync error than
+  // silently skipping every row as "0 transactions".
+  const report: GeneralLedgerReport = {
+    Columns: {
+      Column: [{ ColType: 'Date', ColTitle: 'Date', MetaData: [{ Name: 'ColKey', Value: 'tx_date' }] }],
+    },
+    Rows: { Row: [{ type: 'Data', ColData: [{ value: '2025-06-02' }] }] },
+  };
+  assert.throws(() => transformReport(report), /subt_nat_amount/);
 });
 
 test('transformReport handles an empty report', () => {

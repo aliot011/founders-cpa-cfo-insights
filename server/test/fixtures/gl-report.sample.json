@@ -1,213 +1,1023 @@
 {
-  "Header": {
-    "ReportName": "GeneralLedger",
-    "Option": [{ "Name": "NoReportData", "Value": "false" }],
-    "ReportBasis": "Accrual",
-    "StartPeriod": "2025-01-01",
-    "EndPeriod": "2025-03-31",
-    "Currency": "USD",
-    "Time": "2025-04-01T09:11:52-08:00"
-  },
-  "Columns": {
-    "Column": [
-      { "ColType": "account_name", "ColTitle": "Account" },
-      { "ColType": "tx_date", "ColTitle": "Date" },
-      { "ColType": "txn_type", "ColTitle": "Transaction Type" },
-      { "ColType": "name", "ColTitle": "Name" },
-      { "ColType": "vend_name", "ColTitle": "Vendor" },
-      { "ColType": "cust_name", "ColTitle": "Customer" },
-      { "ColType": "memo", "ColTitle": "Memo/Description" },
-      { "ColType": "subt_nat_amount", "ColTitle": "Amount" }
+ "Header": {
+  "Time": "2026-07-07T12:46:31-07:00",
+  "ReportName": "GeneralLedger",
+  "ReportBasis": "Accrual",
+  "StartPeriod": "2026-01-01",
+  "EndPeriod": "2026-07-07",
+  "Currency": "USD",
+  "Option": [
+   {
+    "Name": "NoReportData",
+    "Value": "false"
+   }
+  ]
+ },
+ "Columns": {
+  "Column": [
+   {
+    "ColTitle": "Date",
+    "ColType": "Date",
+    "MetaData": [
+     {
+      "Name": "ColKey",
+      "Value": "tx_date"
+     }
     ]
-  },
-  "Rows": {
-    "Row": [
+   },
+   {
+    "ColTitle": "Transaction Type",
+    "ColType": "String",
+    "MetaData": [
+     {
+      "Name": "ColKey",
+      "Value": "txn_type"
+     }
+    ]
+   },
+   {
+    "ColTitle": "Name",
+    "ColType": "String",
+    "MetaData": [
+     {
+      "Name": "ColKey",
+      "Value": "name"
+     }
+    ]
+   },
+   {
+    "ColTitle": "Customer",
+    "ColType": "String",
+    "MetaData": [
+     {
+      "Name": "ColKey",
+      "Value": "cust_name"
+     }
+    ]
+   },
+   {
+    "ColTitle": "Vendor",
+    "ColType": "String",
+    "MetaData": [
+     {
+      "Name": "ColKey",
+      "Value": "vend_name"
+     }
+    ]
+   },
+   {
+    "ColTitle": "Memo/Description",
+    "ColType": "String",
+    "MetaData": [
+     {
+      "Name": "ColKey",
+      "Value": "memo"
+     }
+    ]
+   },
+   {
+    "ColTitle": "Account",
+    "ColType": "String",
+    "MetaData": [
+     {
+      "Name": "ColKey",
+      "Value": "account_name"
+     }
+    ]
+   },
+   {
+    "ColTitle": "Amount",
+    "ColType": "Money",
+    "MetaData": [
+     {
+      "Name": "ColKey",
+      "Value": "subt_nat_amount"
+     }
+    ]
+   }
+  ]
+ },
+ "Rows": {
+  "Row": [
+   {
+    "Header": {
+     "ColData": [
       {
-        "Header": {
-          "ColData": [
-            { "id": "82", "value": "Design income" },
-            { "value": "" }, { "value": "" }, { "value": "" },
-            { "value": "" }, { "value": "" }, { "value": "" }, { "value": "" }
-          ]
-        },
-        "Rows": {
-          "Row": [
-            {
-              "ColData": [
-                { "id": "82", "value": "Design income" },
-                { "value": "2025-01-15" },
-                { "value": "Invoice" },
-                { "value": "Amy's Bird Sanctuary" },
-                { "value": "" },
-                { "value": "Amy's Bird Sanctuary" },
-                { "value": "Logo design" },
-                { "value": "225.00" }
-              ],
-              "type": "Data"
-            },
-            {
-              "ColData": [
-                { "id": "82", "value": "Design income" },
-                { "value": "2025-02-03" },
-                { "value": "Sales Receipt" },
-                { "value": "Cool Cars" },
-                { "value": "" },
-                { "value": "Cool Cars" },
-                { "value": "" },
-                { "value": "750.00" }
-              ],
-              "type": "Data"
-            }
-          ]
-        },
-        "type": "Section",
-        "Summary": {
-          "ColData": [
-            { "value": "Total for Design income" },
-            { "value": "" }, { "value": "" }, { "value": "" },
-            { "value": "" }, { "value": "" }, { "value": "" },
-            { "value": "975.00" }
-          ]
-        }
+       "value": "Checking",
+       "id": "35"
       },
       {
-        "Header": {
-          "ColData": [
-            { "id": "35", "value": "Checking" },
-            { "value": "" }, { "value": "" }, { "value": "" },
-            { "value": "" }, { "value": "" }, { "value": "" }, { "value": "" }
-          ]
-        },
-        "Rows": {
-          "Row": [
-            {
-              "ColData": [
-                { "value": "Beginning Balance" },
-                { "value": "" }, { "value": "" }, { "value": "" },
-                { "value": "" }, { "value": "" }, { "value": "" },
-                { "value": "1201.00" }
-              ],
-              "type": "Data"
-            },
-            {
-              "ColData": [
-                { "id": "35", "value": "Checking" },
-                { "value": "2025-01-20" },
-                { "value": "Payment" },
-                { "value": "Amy's Bird Sanctuary" },
-                { "value": "" },
-                { "value": "Amy's Bird Sanctuary" },
-                { "value": "" },
-                { "value": "225.00" }
-              ],
-              "type": "Data"
-            },
-            {
-              "ColData": [
-                { "id": "35", "value": "Checking" },
-                { "value": "2025-02-10" },
-                { "value": "Expense" },
-                { "value": "PG&E" },
-                { "value": "PG&E" },
-                { "value": "" },
-                { "value": "Utilities bill" },
-                { "value": "-86.44" }
-              ],
-              "type": "Data"
-            }
-          ]
-        },
-        "type": "Section",
-        "Summary": {
-          "ColData": [
-            { "value": "Total for Checking" },
-            { "value": "" }, { "value": "" }, { "value": "" },
-            { "value": "" }, { "value": "" }, { "value": "" },
-            { "value": "1339.56" }
-          ]
-        }
+       "value": ""
       },
       {
-        "Header": {
-          "ColData": [
-            { "id": "48", "value": "Job Materials" },
-            { "value": "" }, { "value": "" }, { "value": "" },
-            { "value": "" }, { "value": "" }, { "value": "" }, { "value": "" }
-          ]
-        },
-        "Rows": {
-          "Row": [
-            {
-              "Header": {
-                "ColData": [
-                  { "value": "Plants and Soil" },
-                  { "value": "" }, { "value": "" }, { "value": "" },
-                  { "value": "" }, { "value": "" }, { "value": "" }, { "value": "" }
-                ]
-              },
-              "Rows": {
-                "Row": [
-                  {
-                    "ColData": [
-                      { "id": "49", "value": "Landscaping Services:Job Materials:Plants and Soil" },
-                      { "value": "2025-03-05" },
-                      { "value": "Bill" },
-                      { "value": "Norton Lumber" },
-                      { "value": "Norton Lumber" },
-                      { "value": "" },
-                      { "value": "Soil order" },
-                      { "value": "131.25" }
-                    ],
-                    "type": "Data"
-                  },
-                  {
-                    "ColData": [
-                      { "id": "49", "value": "Landscaping Services:Job Materials:Plants and Soil" },
-                      { "value": "2025-03-18" },
-                      { "value": "Vendor Credit" },
-                      { "value": "Norton Lumber" },
-                      { "value": "Norton Lumber" },
-                      { "value": "" },
-                      { "value": "Returned soil" },
-                      { "value": "-24.36" }
-                    ],
-                    "type": "Data"
-                  }
-                ]
-              },
-              "type": "Section",
-              "Summary": {
-                "ColData": [
-                  { "value": "Total for Plants and Soil" },
-                  { "value": "" }, { "value": "" }, { "value": "" },
-                  { "value": "" }, { "value": "" }, { "value": "" },
-                  { "value": "106.89" }
-                ]
-              }
-            }
-          ]
-        },
-        "type": "Section",
-        "Summary": {
-          "ColData": [
-            { "value": "Total for Job Materials" },
-            { "value": "" }, { "value": "" }, { "value": "" },
-            { "value": "" }, { "value": "" }, { "value": "" },
-            { "value": "106.89" }
-          ]
-        }
+       "value": ""
       },
       {
-        "type": "Section",
-        "Summary": {
-          "ColData": [
-            { "value": "accountsTotal for Landscaping Services with sub-accounts." },
-            { "value": "" }, { "value": "" }, { "value": "" },
-            { "value": "" }, { "value": "" }, { "value": "" },
-            { "value": "106.89" }
-          ]
-        }
+       "value": ""
+      },
+      {
+       "value": ""
+      },
+      {
+       "value": ""
+      },
+      {
+       "value": ""
+      },
+      {
+       "value": ""
       }
-    ]
-  }
+     ]
+    },
+    "Rows": {
+     "Row": [
+      {
+       "ColData": [
+        {
+         "value": "Beginning Balance"
+        },
+        {
+         "value": ""
+        },
+        {
+         "value": ""
+        },
+        {
+         "value": ""
+        },
+        {
+         "value": ""
+        },
+        {
+         "value": ""
+        },
+        {
+         "value": ""
+        },
+        {
+         "value": ""
+        }
+       ],
+       "type": "Data"
+      },
+      {
+       "ColData": [
+        {
+         "value": "2026-01-06"
+        },
+        {
+         "value": "Check",
+         "id": "84"
+        },
+        {
+         "value": "Tony Rondonuwu",
+         "id": "52"
+        },
+        {
+         "value": "",
+         "id": ""
+        },
+        {
+         "value": "Tony Rondonuwu",
+         "id": "52"
+        },
+        {
+         "value": ""
+        },
+        {
+         "value": "Checking",
+         "id": "35"
+        },
+        {
+         "value": "-100.00"
+        }
+       ],
+       "type": "Data"
+      },
+      {
+       "ColData": [
+        {
+         "value": "2026-01-06"
+        },
+        {
+         "value": "Cash Expense",
+         "id": "135"
+        },
+        {
+         "value": "Bob's Burger Joint",
+         "id": "56"
+        },
+        {
+         "value": "",
+         "id": ""
+        },
+        {
+         "value": "Bob's Burger Joint",
+         "id": "56"
+        },
+        {
+         "value": ""
+        },
+        {
+         "value": "Checking",
+         "id": "35"
+        },
+        {
+         "value": "-5.66"
+        }
+       ],
+       "type": "Data"
+      }
+     ]
+    },
+    "Summary": {
+     "ColData": [
+      {
+       "value": "Total for Checking"
+      },
+      {
+       "value": ""
+      },
+      {
+       "value": ""
+      },
+      {
+       "value": ""
+      },
+      {
+       "value": ""
+      },
+      {
+       "value": ""
+      },
+      {
+       "value": ""
+      },
+      {
+       "value": "-3120.40"
+      }
+     ]
+    },
+    "type": "Section"
+   },
+   {
+    "Header": {
+     "ColData": [
+      {
+       "value": "Design income",
+       "id": "82"
+      },
+      {
+       "value": ""
+      },
+      {
+       "value": ""
+      },
+      {
+       "value": ""
+      },
+      {
+       "value": ""
+      },
+      {
+       "value": ""
+      },
+      {
+       "value": ""
+      },
+      {
+       "value": ""
+      }
+     ]
+    },
+    "Rows": {
+     "Row": [
+      {
+       "ColData": [
+        {
+         "value": "2026-01-10"
+        },
+        {
+         "value": "Sales Receipt",
+         "id": "11"
+        },
+        {
+         "value": "Dylan Sollfrank",
+         "id": "6"
+        },
+        {
+         "value": "Dylan Sollfrank",
+         "id": "6"
+        },
+        {
+         "value": "",
+         "id": ""
+        },
+        {
+         "value": "Custom Design"
+        },
+        {
+         "value": "Design income",
+         "id": "82"
+        },
+        {
+         "value": "337.50"
+        }
+       ],
+       "type": "Data"
+      },
+      {
+       "ColData": [
+        {
+         "value": "2026-01-13"
+        },
+        {
+         "value": "Invoice",
+         "id": "49"
+        },
+        {
+         "value": "Paulsen Medical Supplies",
+         "id": "18"
+        },
+        {
+         "value": "Paulsen Medical Supplies",
+         "id": "18"
+        },
+        {
+         "value": "",
+         "id": ""
+        },
+        {
+         "value": "Custom Design"
+        },
+        {
+         "value": "Design income",
+         "id": "82"
+        },
+        {
+         "value": "300.00"
+        }
+       ],
+       "type": "Data"
+      },
+      {
+       "ColData": [
+        {
+         "value": "2026-01-13"
+        },
+        {
+         "value": "Invoice",
+         "id": "34"
+        },
+        {
+         "value": "Weiskopf Consulting",
+         "id": "29"
+        },
+        {
+         "value": "Weiskopf Consulting",
+         "id": "29"
+        },
+        {
+         "value": "",
+         "id": ""
+        },
+        {
+         "value": "Custom Design"
+        },
+        {
+         "value": "Design income",
+         "id": "82"
+        },
+        {
+         "value": "375.00"
+        }
+       ],
+       "type": "Data"
+      }
+     ]
+    },
+    "Summary": {
+     "ColData": [
+      {
+       "value": "Total for Design income"
+      },
+      {
+       "value": ""
+      },
+      {
+       "value": ""
+      },
+      {
+       "value": ""
+      },
+      {
+       "value": ""
+      },
+      {
+       "value": ""
+      },
+      {
+       "value": ""
+      },
+      {
+       "value": "1275.00"
+      }
+     ]
+    },
+    "type": "Section"
+   },
+   {
+    "Header": {
+     "ColData": [
+      {
+       "value": "Job Expenses",
+       "id": "58"
+      },
+      {
+       "value": ""
+      },
+      {
+       "value": ""
+      },
+      {
+       "value": ""
+      },
+      {
+       "value": ""
+      },
+      {
+       "value": ""
+      },
+      {
+       "value": ""
+      },
+      {
+       "value": ""
+      }
+     ]
+    },
+    "Rows": {
+     "Row": [
+      {
+       "Rows": {
+        "Row": [
+         {
+          "ColData": [
+           {
+            "value": "2026-01-14"
+           },
+           {
+            "value": "Expense",
+            "id": "89"
+           },
+           {
+            "value": "Tania's Nursery",
+            "id": "50"
+           },
+           {
+            "value": "",
+            "id": ""
+           },
+           {
+            "value": "Tania's Nursery",
+            "id": "50"
+           },
+           {
+            "value": ""
+           },
+           {
+            "value": "Job Expenses",
+            "id": "58"
+           },
+           {
+            "value": "46.98"
+           }
+          ],
+          "type": "Data"
+         }
+        ]
+       },
+       "Summary": {
+        "ColData": [
+         {
+          "value": "Total for Job Expenses"
+         },
+         {
+          "value": ""
+         },
+         {
+          "value": ""
+         },
+         {
+          "value": ""
+         },
+         {
+          "value": ""
+         },
+         {
+          "value": ""
+         },
+         {
+          "value": ""
+         },
+         {
+          "value": "46.98"
+         }
+        ]
+       },
+       "type": "Section"
+      },
+      {
+       "Header": {
+        "ColData": [
+         {
+          "value": "Job Materials"
+         },
+         {
+          "value": ""
+         },
+         {
+          "value": ""
+         },
+         {
+          "value": ""
+         },
+         {
+          "value": ""
+         },
+         {
+          "value": ""
+         },
+         {
+          "value": ""
+         },
+         {
+          "value": ""
+         }
+        ]
+       },
+       "Rows": {
+        "Row": [
+         {
+          "Header": {
+           "ColData": [
+            {
+             "value": "Decks and Patios",
+             "id": "64"
+            },
+            {
+             "value": ""
+            },
+            {
+             "value": ""
+            },
+            {
+             "value": ""
+            },
+            {
+             "value": ""
+            },
+            {
+             "value": ""
+            },
+            {
+             "value": ""
+            },
+            {
+             "value": ""
+            }
+           ]
+          },
+          "Rows": {
+           "Row": [
+            {
+             "ColData": [
+              {
+               "value": "2026-01-03"
+              },
+              {
+               "value": "Expense",
+               "id": "81"
+              },
+              {
+               "value": "Hicks Hardware",
+               "id": "41"
+              },
+              {
+               "value": "Red Rock Diner",
+               "id": "20"
+              },
+              {
+               "value": "Hicks Hardware",
+               "id": "41"
+              },
+              {
+               "value": ""
+              },
+              {
+               "value": "Job Expenses:Job Materials:Decks and Patios",
+               "id": "64"
+              },
+              {
+               "value": "88.09"
+              }
+             ],
+             "type": "Data"
+            },
+            {
+             "ColData": [
+              {
+               "value": "2026-01-12"
+              },
+              {
+               "value": "Bill",
+               "id": "25"
+              },
+              {
+               "value": "Norton Lumber and Building Materials",
+               "id": "46"
+              },
+              {
+               "value": "Travis Waldron",
+               "id": "26"
+              },
+              {
+               "value": "Norton Lumber and Building Materials",
+               "id": "46"
+              },
+              {
+               "value": "Lumber"
+              },
+              {
+               "value": "Job Expenses:Job Materials:Decks and Patios",
+               "id": "64"
+              },
+              {
+               "value": "103.55"
+              }
+             ],
+             "type": "Data"
+            },
+            {
+             "ColData": [
+              {
+               "value": "2026-01-21"
+              },
+              {
+               "value": "Credit Card Expense",
+               "id": "143"
+              },
+              {
+               "value": "Hicks Hardware",
+               "id": "41"
+              },
+              {
+               "value": "",
+               "id": ""
+              },
+              {
+               "value": "Hicks Hardware",
+               "id": "41"
+              },
+              {
+               "value": ""
+              },
+              {
+               "value": "Job Expenses:Job Materials:Decks and Patios",
+               "id": "64"
+              },
+              {
+               "value": "42.40"
+              }
+             ],
+             "type": "Data"
+            }
+           ]
+          },
+          "Summary": {
+           "ColData": [
+            {
+             "value": "Total for Decks and Patios"
+            },
+            {
+             "value": ""
+            },
+            {
+             "value": ""
+            },
+            {
+             "value": ""
+            },
+            {
+             "value": ""
+            },
+            {
+             "value": ""
+            },
+            {
+             "value": ""
+            },
+            {
+             "value": "234.04"
+            }
+           ]
+          },
+          "type": "Section"
+         },
+         {
+          "Header": {
+           "ColData": [
+            {
+             "value": "Plants and Soil",
+             "id": "66"
+            },
+            {
+             "value": ""
+            },
+            {
+             "value": ""
+            },
+            {
+             "value": ""
+            },
+            {
+             "value": ""
+            },
+            {
+             "value": ""
+            },
+            {
+             "value": ""
+            },
+            {
+             "value": ""
+            }
+           ]
+          },
+          "Rows": {
+           "Row": [
+            {
+             "ColData": [
+              {
+               "value": "2026-01-09"
+              },
+              {
+               "value": "Expense",
+               "id": "56"
+              },
+              {
+               "value": "Tania's Nursery",
+               "id": "50"
+              },
+              {
+               "value": "",
+               "id": ""
+              },
+              {
+               "value": "Tania's Nursery",
+               "id": "50"
+              },
+              {
+               "value": ""
+              },
+              {
+               "value": "Job Expenses:Job Materials:Plants and Soil",
+               "id": "66"
+              },
+              {
+               "value": "82.45"
+              }
+             ],
+             "type": "Data"
+            },
+            {
+             "ColData": [
+              {
+               "value": "2026-01-18"
+              },
+              {
+               "value": "Cash Expense",
+               "id": "134"
+              },
+              {
+               "value": "Tania's Nursery",
+               "id": "50"
+              },
+              {
+               "value": "",
+               "id": ""
+              },
+              {
+               "value": "Tania's Nursery",
+               "id": "50"
+              },
+              {
+               "value": ""
+              },
+              {
+               "value": "Job Expenses:Job Materials:Plants and Soil",
+               "id": "66"
+              },
+              {
+               "value": "23.50"
+              }
+             ],
+             "type": "Data"
+            }
+           ]
+          },
+          "Summary": {
+           "ColData": [
+            {
+             "value": "Total for Plants and Soil"
+            },
+            {
+             "value": ""
+            },
+            {
+             "value": ""
+            },
+            {
+             "value": ""
+            },
+            {
+             "value": ""
+            },
+            {
+             "value": ""
+            },
+            {
+             "value": ""
+            },
+            {
+             "value": "105.95"
+            }
+           ]
+          },
+          "type": "Section"
+         },
+         {
+          "Header": {
+           "ColData": [
+            {
+             "value": "Sprinklers and Drip Systems",
+             "id": "67"
+            },
+            {
+             "value": ""
+            },
+            {
+             "value": ""
+            },
+            {
+             "value": ""
+            },
+            {
+             "value": ""
+            },
+            {
+             "value": ""
+            },
+            {
+             "value": ""
+            },
+            {
+             "value": ""
+            }
+           ]
+          },
+          "Rows": {
+           "Row": [
+            {
+             "ColData": [
+              {
+               "value": "2026-01-09"
+              },
+              {
+               "value": "Expense",
+               "id": "83"
+              },
+              {
+               "value": "Hicks Hardware",
+               "id": "41"
+              },
+              {
+               "value": "",
+               "id": ""
+              },
+              {
+               "value": "Hicks Hardware",
+               "id": "41"
+              },
+              {
+               "value": ""
+              },
+              {
+               "value": "Job Expenses:Job Materials:Sprinklers and Drip Systems",
+               "id": "67"
+              },
+              {
+               "value": "215.66"
+              }
+             ],
+             "type": "Data"
+            }
+           ]
+          },
+          "Summary": {
+           "ColData": [
+            {
+             "value": "Total for Sprinklers and Drip Systems"
+            },
+            {
+             "value": ""
+            },
+            {
+             "value": ""
+            },
+            {
+             "value": ""
+            },
+            {
+             "value": ""
+            },
+            {
+             "value": ""
+            },
+            {
+             "value": ""
+            },
+            {
+             "value": "215.66"
+            }
+           ]
+          },
+          "type": "Section"
+         }
+        ]
+       },
+       "Summary": {
+        "ColData": [
+         {
+          "value": "Total for Job Materials"
+         },
+         {
+          "value": ""
+         },
+         {
+          "value": ""
+         },
+         {
+          "value": ""
+         },
+         {
+          "value": ""
+         },
+         {
+          "value": ""
+         },
+         {
+          "value": ""
+         },
+         {
+          "value": "555.65"
+         }
+        ]
+       },
+       "type": "Section"
+      }
+     ]
+    },
+    "Summary": {
+     "ColData": [
+      {
+       "value": "Total for Job Expenses with sub-accounts"
+      },
+      {
+       "value": ""
+      },
+      {
+       "value": ""
+      },
+      {
+       "value": ""
+      },
+      {
+       "value": ""
+      },
+      {
+       "value": ""
+      },
+      {
+       "value": ""
+      },
+      {
+       "value": "602.63"
+      }
+     ]
+    },
+    "type": "Section"
+   }
+  ]
+ }
 }

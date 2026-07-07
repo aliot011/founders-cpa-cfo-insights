@@ -57,6 +57,9 @@ export interface LedgerEntry {
 /** account name -> category. User-editable, persisted. */
 export type AccountMap = Record<string, Category>;
 
+/** QBO report basis used when pulling a client's General Ledger. */
+export type AccountingMethod = 'Accrual' | 'Cash';
+
 /** One connected QuickBooks company, as listed by the API. */
 export interface ClientSummary {
   realmId: string;
@@ -67,6 +70,7 @@ export interface ClientSummary {
   /** User override for where syncs start; null = full company history. */
   syncStartDate: string | null;
   companyStartDate: string | null;
+  accountingMethod: AccountingMethod;
 }
 
 /** A client's synced dataset, as served by the API. */

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import type { AccountMap } from '../../../src/types.ts';
+import type { AccountingMethod, AccountMap } from '../../../src/types.ts';
 import {
   deleteConnection,
   getConnection,
@@ -7,6 +7,7 @@ import {
   listConnections,
   listSyncLog,
   saveAccountMap,
+  setAccountingMethod,
   setSyncStartDate,
 } from '../db.ts';
 import { ApiError } from '../errors.ts';
@@ -33,6 +34,7 @@ clientsRouter.get('/', (_req, res) => {
       lastSyncedAt: getDataset(c.realm_id)?.last_synced_at ?? null,
       syncStartDate: c.sync_start_date,
       companyStartDate: c.company_start_date,
+      accountingMethod: c.accounting_method,
     })),
   );
 });
@@ -96,11 +98,19 @@ clientsRouter.get('/:realmId/sync-log', (req, res) => {
 
 clientsRouter.put('/:realmId/settings', (req, res) => {
   requireConnection(req.params.realmId);
-  const { syncStartDate } = (req.body ?? {}) as { syncStartDate?: string | null };
-  if (syncStartDate != null && !DATE_RE.test(syncStartDate)) {
-    throw new ApiError(400, 'syncStartDate must be YYYY-MM-DD or null.', 'bad_request');
+  const body = (req.body ?? {}) as { syncStartDate?: string | null; accountingMethod?: AccountingMethod };
+  if ('syncStartDate' in body) {
+    if (body.syncStartDate != null && !DATE_RE.test(body.syncStartDate)) {
+      throw new ApiError(400, 'syncStartDate must be YYYY-MM-DD or null.', 'bad_request');
+    }
+    setSyncStartDate(req.params.realmId, body.syncStartDate ?? null);
   }
-  setSyncStartDate(req.params.realmId, syncStartDate ?? null);
+  if ('accountingMethod' in body) {
+    if (body.accountingMethod !== 'Accrual' && body.accountingMethod !== 'Cash') {
+      throw new ApiError(400, "accountingMethod must be 'Accrual' or 'Cash'.", 'bad_request');
+    }
+    setAccountingMethod(req.params.realmId, body.accountingMethod);
+  }
   res.json({ ok: true });
 });
 

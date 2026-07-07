@@ -40,6 +40,8 @@ export interface ReportRow {
 export interface ReportColumn {
   ColType?: string;
   ColTitle?: string;
+  /** The stable column key lives here, e.g. { Name: 'ColKey', Value: 'tx_date' }. */
+  MetaData?: { Name?: string; Value?: string }[];
 }
 
 export interface GeneralLedgerReport {

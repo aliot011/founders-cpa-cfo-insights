@@ -64,7 +64,7 @@ export async function runSync(
 
     const notes: string[] = [];
     const qboAccounts = await fetchAllAccounts(realmId);
-    const { entries, skipped } = await fetchGeneralLedger(realmId, startDate, endDate);
+    const { entries, skipped } = await fetchGeneralLedger(realmId, startDate, endDate, conn.accounting_method);
 
     // Classify: saved map first, QBO account types for new names, heuristics
     // for report labels that match no Account entity (e.g. renamed accounts).
@@ -81,7 +81,7 @@ export async function runSync(
     }
 
     notes.push(
-      `Synced ${entries.length.toLocaleString()} transactions across ${new Set(entries.map((e) => e.account)).size} accounts (${startDate} → ${endDate}).`,
+      `Synced ${entries.length.toLocaleString()} transactions across ${new Set(entries.map((e) => e.account)).size} accounts (${startDate} → ${endDate}, ${conn.accounting_method.toLowerCase()} basis).`,
     );
     if (added.length > 0) {
       notes.push(`Auto-categorized ${added.length} new account(s) — review them in the Accounts tab.`);

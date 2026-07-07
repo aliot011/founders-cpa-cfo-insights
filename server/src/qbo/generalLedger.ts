@@ -1,12 +1,13 @@
-import type { LedgerEntry } from '../../../src/types.ts';
+import type { AccountingMethod, LedgerEntry } from '../../../src/types.ts';
 import { qboFetch } from './client.ts';
-import type { GeneralLedgerReport, ReportRow } from './types.ts';
+import type { GeneralLedgerReport, ReportColumn, ReportRow } from './types.ts';
 
 // All values below are from the documented supported `columns=` list for the
-// GeneralLedger report. The amount comes back as the default natural-sign
-// `subt_nat_amount` column; `computeCategorySigns()` in src/lib/metrics.ts
-// normalizes per-category signs downstream, so it is used as-is.
-const REPORT_COLUMNS = 'account_name,tx_date,txn_type,name,memo,vend_name,cust_name';
+// GeneralLedger report. `subt_nat_amount` must be requested explicitly — the
+// API returns no amount column otherwise. It is the natural-sign amount;
+// `computeCategorySigns()` in src/lib/metrics.ts normalizes per-category
+// signs downstream, so it is used as-is.
+const REPORT_COLUMNS = 'account_name,tx_date,txn_type,name,memo,vend_name,cust_name,subt_nat_amount';
 
 export interface TransformResult {
   entries: LedgerEntry[];
@@ -26,12 +27,22 @@ interface ColumnIndex {
 }
 
 /**
+ * The stable key for a report column. The live API identifies columns via
+ * MetaData ColKey (ColType is just the generic Date/String/Money); older
+ * shapes carried the key in ColType, kept as a fallback.
+ */
+function colKey(column: ReportColumn): string | undefined {
+  return column.MetaData?.find((m) => m.Name === 'ColKey')?.Value ?? column.ColType;
+}
+
+/**
  * Index columns from the response's own metadata — never by position. The
- * column set drifts with company features (classes, locations, sales tax).
+ * column set and order drift with the request and company features (classes,
+ * locations, sales tax).
  */
 function indexColumns(report: GeneralLedgerReport): ColumnIndex {
   const columns = report.Columns?.Column ?? [];
-  const find = (type: string) => columns.findIndex((c) => c.ColType === type);
+  const find = (key: string) => columns.findIndex((c) => colKey(c) === key);
   return {
     account: find('account_name'),
     date: find('tx_date'),
@@ -56,7 +67,16 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
  * section header as fallback. Summary rows are excluded (double-count hazard).
  */
 export function transformReport(report: GeneralLedgerReport): TransformResult {
+  const rootRows = report.Rows?.Row ?? [];
+  if (rootRows.length === 0) return { entries: [], skipped: 0 };
+
   const cols = indexColumns(report);
+  if (cols.date < 0 || cols.amount < 0) {
+    // Fail loudly: silently skipping every row reads as "synced 0 transactions".
+    const got = (report.Columns?.Column ?? []).map((c) => colKey(c) ?? '?').join(', ');
+    throw new Error(`GeneralLedger response lacks tx_date/subt_nat_amount columns (got: ${got || 'none'}).`);
+  }
+
   const entries: LedgerEntry[] = [];
   let skipped = 0;
 
@@ -69,7 +89,7 @@ export function transformReport(report: GeneralLedgerReport): TransformResult {
     for (const row of rows ?? []) {
       if (row.type === 'Data' && row.ColData) {
         const date = cell(row, cols.date);
-        const rawAmount = cell(row, cols.amount >= 0 ? cols.amount : row.ColData.length - 1);
+        const rawAmount = cell(row, cols.amount).replace(/,/g, '');
         const amount = rawAmount === '' ? NaN : Number(rawAmount);
         const account = cell(row, cols.account) || sectionAccount;
         // Beginning Balance and similar summary-ish data rows have no date.
@@ -122,6 +142,7 @@ export async function fetchGeneralLedger(
   realmId: string,
   startDate: string,
   endDate: string,
+  accountingMethod: AccountingMethod = 'Accrual',
 ): Promise<TransformResult> {
   const entries: LedgerEntry[] = [];
   let skipped = 0;
@@ -129,7 +150,7 @@ export async function fetchGeneralLedger(
     const report = await qboFetch<GeneralLedgerReport>(realmId, '/reports/GeneralLedger', {
       start_date: chunk.start,
       end_date: chunk.end,
-      accounting_method: 'Accrual',
+      accounting_method: accountingMethod,
       columns: REPORT_COLUMNS,
     });
     if (isEmptyReport(report)) continue;
