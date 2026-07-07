@@ -25,10 +25,17 @@ interface Column {
   label: string;
   values: Record<MetricKey, number>;
   months: MonthlyMetrics[];
+  /** True when the bucket has its full complement of months (3 for a quarter, 12 for a year). */
+  complete: boolean;
+  monthCount: number;
+  expected: number;
 }
 
 /** How many columns to show per granularity (LTM for month/quarter, up to 5y for year). */
 const COLUMN_LIMIT: Record<Granularity, number> = { month: 12, quarter: 4, year: 5 };
+
+/** Months in a full bucket, used to flag partial quarters/years. */
+const EXPECTED_MONTHS: Record<Granularity, number> = { month: 1, quarter: 3, year: 12 };
 
 /** Aggregate a set of months: flows sum, margins recompute, cash = ending balance. */
 function aggregate(months: MonthlyMetrics[]): Record<MetricKey, number> {
@@ -78,9 +85,18 @@ function toColumns(metrics: MonthlyMetrics[], gran: Granularity): Column[] {
     }
     c.months.push(m);
   }
+  const expected = EXPECTED_MONTHS[gran];
   return order.map((key) => {
     const c = byKey.get(key)!;
-    return { key, label: c.label, values: aggregate(c.months), months: c.months };
+    return {
+      key,
+      label: c.label,
+      values: aggregate(c.months),
+      months: c.months,
+      monthCount: c.months.length,
+      expected,
+      complete: c.months.length >= expected,
+    };
   });
 }
 
@@ -95,6 +111,8 @@ export function MetricsTable({ metrics }: Props) {
   // Window to the most recent columns; Total sums that same window so it reconciles.
   const columns = toColumns(metrics, gran).slice(-COLUMN_LIMIT[gran]);
   const totals = aggregate(columns.flatMap((c) => c.months));
+  const partials = columns.filter((c) => !c.complete);
+  const unit = gran === 'quarter' ? 'quarter' : 'year';
 
   return (
     <div className="panel">
@@ -118,7 +136,13 @@ export function MetricsTable({ metrics }: Props) {
             <tr>
               <th className="metric-name">Metric</th>
               {columns.map((c) => (
-                <th key={c.key}>{c.label}</th>
+                <th key={c.key} className={c.complete ? '' : 'col-partial'}>
+                  {c.label}
+                  {!c.complete && '*'}
+                  {!c.complete && (
+                    <span className="col-partial-note">{c.monthCount} of {c.expected} mo</span>
+                  )}
+                </th>
               ))}
               <th className="col-total">Total</th>
             </tr>
@@ -138,7 +162,7 @@ export function MetricsTable({ metrics }: Props) {
                 <tr key={def.key} className={trClass}>
                   <td className="metric-name" title={def.help}>{def.label}</td>
                   {columns.map((c) => (
-                    <td key={c.key}>{fmt(c.values[def.key])}</td>
+                    <td key={c.key} className={c.complete ? '' : 'col-partial'}>{fmt(c.values[def.key])}</td>
                   ))}
                   <td className="col-total">{fmt(totals[def.key])}</td>
                 </tr>
@@ -147,6 +171,14 @@ export function MetricsTable({ metrics }: Props) {
           </tbody>
         </table>
       </div>
+      {partials.length > 0 && (
+        <p className="var-caption">
+          <strong>*</strong> Partial {unit}
+          {partials.length > 1 ? 's' : ''} ({partials.map((c) => `${c.label}: ${c.monthCount} of ${c.expected} months`).join(', ')}).
+          Flow figures cover only the months available, so they are not directly comparable to complete periods;
+          margins and cash are unaffected.
+        </p>
+      )}
     </div>
   );
 }

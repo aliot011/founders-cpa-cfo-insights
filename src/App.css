@@ -382,6 +382,20 @@ table.detail tbody tr.metric-total td,
 table.detail tbody tr.metric-total td.metric-name {
   font-weight: 700;
 }
+/* Partial (incomplete) quarter/year columns: muted, with a "N of M mo" note. */
+table.detail tbody td.col-partial {
+  color: var(--muted);
+}
+.col-partial-note {
+  display: block;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  opacity: 0.8;
+  margin-top: 2px;
+}
+
 /* Total column set off on the right. */
 table.detail .col-total {
   border-left: 1px solid var(--line-strong);
