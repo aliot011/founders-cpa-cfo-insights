@@ -33,9 +33,18 @@ function signed(n: number): string {
   return `${n > 0 ? '+' : ''}${formatCurrency(n)}`;
 }
 
-function signClass(n: number | null): string {
-  if (n == null || !isFinite(n) || n === 0) return 'muted';
-  return n > 0 ? 'pos' : 'neg';
+/** P&L lines where an increase is unfavourable. */
+const COST_KEYS = new Set(['cogs', 'opex']);
+
+/**
+ * Good/bad tone for a change value. `upIsGood` is true when a rise is
+ * favourable (revenue, profit, margins) and false for costs. Returns a class
+ * that colours the text and shades the cell background.
+ */
+function toneClass(value: number | null, upIsGood: boolean): string {
+  if (value == null || !isFinite(value) || value === 0) return 'chg-flat';
+  const good = value > 0 === upIsGood;
+  return good ? 'chg-good' : 'chg-bad';
 }
 
 export function VarianceAnalysis({ entries, accountMap, months }: Props) {
@@ -123,20 +132,20 @@ export function VarianceAnalysis({ entries, accountMap, months }: Props) {
                       <td className="metric-name">{r.account}</td>
                       <td className="num">{formatCurrency(r.p1)}</td>
                       <td className="num">{formatCurrency(r.p2)}</td>
-                      <td className={`num ${signClass(r.change)}`}>{signed(r.change)}</td>
-                      <td className={`num ${signClass(r.change)}`}>{pctText(r.pctChange, r.change)}</td>
-                      <td className={`num ${signClass(r.cashImpact)}`}>{signed(r.cashImpact ?? 0)}</td>
+                      <td className={`num ${toneClass(r.change, true)}`}>{signed(r.change)}</td>
+                      <td className={`num ${toneClass(r.pctChange, true)}`}>{pctText(r.pctChange, r.change)}</td>
+                      <td className={`num ${toneClass(r.cashImpact, true)}`}>{signed(r.cashImpact ?? 0)}</td>
                     </tr>
                   ))}
                   <tr className="var-summary">
                     <td className="metric-name">Change in cash (actual)</td>
                     <td className="num" colSpan={4}></td>
-                    <td className={`num ${signClass(report.cashActualChange)}`}>{signed(report.cashActualChange)}</td>
+                    <td className={`num ${toneClass(report.cashActualChange, true)}`}>{signed(report.cashActualChange)}</td>
                   </tr>
                   <tr className="var-summary">
                     <td className="metric-name">Net cash impact of non-cash B/S</td>
                     <td className="num" colSpan={4}></td>
-                    <td className={`num ${signClass(report.bsCashImpactTotal)}`}>{signed(report.bsCashImpactTotal)}</td>
+                    <td className={`num ${toneClass(report.bsCashImpactTotal, true)}`}>{signed(report.bsCashImpactTotal)}</td>
                   </tr>
                 </tbody>
               </table>
@@ -169,9 +178,10 @@ function PnlRow({ line }: { line: PnlLine }) {
   const v2 = isPct ? formatPercent(line.p2) : formatCurrency(line.p2);
 
   // For margin rows the "$ Change" column shows percentage-point movement.
+  const upIsGood = !COST_KEYS.has(line.key);
   const changeText = isPct ? ptsText(line.change) : signed(line.change);
-  const changeCls = signClass(line.change);
-  const pctCls = signClass(line.pctChange);
+  const changeCls = toneClass(line.change, upIsGood);
+  const pctCls = toneClass(line.pctChange, upIsGood);
 
   return (
     <tr className={rowClass}>

@@ -367,12 +367,18 @@ table.detail tbody tr.metric-margin td {
   font-style: italic;
   color: var(--ink-2);
 }
-/* In Flux, keep the +/- colour on the change columns for italic margin rows. */
-table.variance tbody tr.metric-margin td.pos {
+/* Flux change columns: text colour + light shading for good / bad moves.
+   The .num.chg-* specificity beats the italic-margin colour rule. */
+table.variance td.num.chg-good {
   color: var(--pos);
+  background: var(--pos-soft);
 }
-table.variance tbody tr.metric-margin td.neg {
+table.variance td.num.chg-bad {
   color: var(--neg);
+  background: var(--neg-soft);
+}
+table.variance td.num.chg-flat {
+  color: var(--muted);
 }
 /* Only total lines are bold; everything else (incl. the label) is regular. */
 table.detail td,
