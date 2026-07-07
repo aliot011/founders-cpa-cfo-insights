@@ -24,7 +24,11 @@ interface Column {
   key: string;
   label: string;
   values: Record<MetricKey, number>;
+  months: MonthlyMetrics[];
 }
+
+/** How many columns to show per granularity (LTM for month/quarter, up to 5y for year). */
+const COLUMN_LIMIT: Record<Granularity, number> = { month: 12, quarter: 4, year: 5 };
 
 /** Aggregate a set of months: flows sum, margins recompute, cash = ending balance. */
 function aggregate(months: MonthlyMetrics[]): Record<MetricKey, number> {
@@ -76,20 +80,27 @@ function toColumns(metrics: MonthlyMetrics[], gran: Granularity): Column[] {
   }
   return order.map((key) => {
     const c = byKey.get(key)!;
-    return { key, label: c.label, values: aggregate(c.months) };
+    return { key, label: c.label, values: aggregate(c.months), months: c.months };
   });
+}
+
+function windowLabel(gran: Granularity, count: number): string {
+  const noun = gran === 'month' ? 'month' : gran === 'quarter' ? 'quarter' : 'year';
+  return `Last ${count} ${noun}${count === 1 ? '' : 's'}`;
 }
 
 /** Full metric-by-period grid with a total column. */
 export function MetricsTable({ metrics }: Props) {
   const [gran, setGran] = useState<Granularity>('month');
-  const columns = toColumns(metrics, gran);
-  const totals = aggregate(metrics);
+  // Window to the most recent columns; Total sums that same window so it reconciles.
+  const columns = toColumns(metrics, gran).slice(-COLUMN_LIMIT[gran]);
+  const totals = aggregate(columns.flatMap((c) => c.months));
 
   return (
     <div className="panel">
       <div className="panel-head panel-head-controls">
         <div className="period-picker">
+          <span className="muted" style={{ fontSize: 12 }}>{windowLabel(gran, columns.length)}</span>
           <select
             className="pp-gran"
             value={gran}
