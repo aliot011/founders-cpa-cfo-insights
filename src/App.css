@@ -186,6 +186,28 @@
   padding-right: 4px;
 }
 
+/* ---- Page header ------------------------------------------------------ */
+.page-head {
+  margin-bottom: 22px;
+}
+.page-head h1 {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.page-head p {
+  margin: 7px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.55;
+  max-width: 680px;
+}
+
+/* Panel header that holds only controls (title lives in the page header). */
+.panel-head.panel-head-controls {
+  justify-content: flex-end;
+}
+
 /* ---- Section --------------------------------------------------------- */
 .section {
   margin-bottom: 30px;

@@ -33,6 +33,7 @@ export function Dashboard({ dataset, onMapChange }: Props) {
 
   const months = useMemo(() => metrics.map((m) => m.month), [metrics]);
   const hasRevenue = metrics.some((m) => m.revenue !== 0);
+  const latestMonthLabel = metrics.length > 0 ? formatMonth(metrics[metrics.length - 1].month) : 'the latest month';
 
   return (
     <>
@@ -52,13 +53,16 @@ export function Dashboard({ dataset, onMapChange }: Props) {
 
       {tab === 'summary' && (
         <>
+          <PageHeader
+            title="Summary"
+            subtitle="A twelve-month view of revenue, net income, and cash in a single chart, so you can read the trajectory of the business at a glance."
+          />
           {!hasRevenue && (
             <div className="callout">
               No revenue was detected. Open the <strong>Accounts</strong> tab and set your income accounts to{' '}
               <em>Revenue</em>, since most other metrics depend on it.
             </div>
           )}
-
           <div className="section">
             <Charts metrics={metrics} />
           </div>
@@ -67,11 +71,10 @@ export function Dashboard({ dataset, onMapChange }: Props) {
 
       {tab === 'kpis' && (
         <>
-          <div className="section-head">
-            <div>
-              <h2>{metrics.length > 0 ? formatMonth(metrics[metrics.length - 1].month) : 'KPIs'}</h2>
-            </div>
-          </div>
+          <PageHeader
+            title="Key Metrics"
+            subtitle={`Headline numbers for ${latestMonthLabel} with month-over-month change, so you can quickly see what moved and by how much.`}
+          />
           <div className="section">
             <KpiCards metrics={metrics} />
           </div>
@@ -79,27 +82,54 @@ export function Dashboard({ dataset, onMapChange }: Props) {
       )}
 
       {tab === 'detail' && (
-        <div className="section">
-          <MetricsTable metrics={metrics} />
-        </div>
+        <>
+          <PageHeader
+            title="Detail"
+            subtitle="Every metric by month, quarter, or year with a running total, giving you the full financial picture and how each line trends over time."
+          />
+          <div className="section">
+            <MetricsTable metrics={metrics} />
+          </div>
+        </>
       )}
 
       {tab === 'variance' && months.length > 0 && (
-        <div className="section">
-          <VarianceAnalysis entries={dataset.entries} accountMap={dataset.accountMap} months={months} />
-        </div>
+        <>
+          <PageHeader
+            title="Flux Analysis"
+            subtitle="Compares a period against the one before it across the P&L and balance sheet, so you can explain what changed and how it affected cash."
+          />
+          <div className="section">
+            <VarianceAnalysis entries={dataset.entries} accountMap={dataset.accountMap} months={months} />
+          </div>
+        </>
       )}
 
       {tab === 'accounts' && (
-        <div className="section">
-          <AccountMapping
-            entries={dataset.entries}
-            accountMap={dataset.accountMap}
-            onChange={onMapChange}
-            open
+        <>
+          <PageHeader
+            title="Accounts"
+            subtitle="Review and correct how each ledger account is categorized. Every metric on the other tabs is calculated from this mapping, so accuracy here drives everything."
           />
-        </div>
+          <div className="section">
+            <AccountMapping
+              entries={dataset.entries}
+              accountMap={dataset.accountMap}
+              onChange={onMapChange}
+              open
+            />
+          </div>
+        </>
       )}
     </>
+  );
+}
+
+function PageHeader({ title, subtitle }: { title: string; subtitle: string }) {
+  return (
+    <header className="page-head">
+      <h1>{title}</h1>
+      <p>{subtitle}</p>
+    </header>
   );
 }

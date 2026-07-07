@@ -88,8 +88,7 @@ export function MetricsTable({ metrics }: Props) {
 
   return (
     <div className="panel">
-      <div className="panel-head">
-        <h3>All metrics by period</h3>
+      <div className="panel-head panel-head-controls">
         <div className="period-picker">
           <select
             className="pp-gran"
