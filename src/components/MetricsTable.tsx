@@ -42,7 +42,6 @@ export function MetricsTable({ metrics }: Props) {
     <div className="panel">
       <div className="panel-head">
         <h3>All metrics by month</h3>
-        <span className="muted" style={{ fontSize: 12 }}>Total = sum of months (margins recomputed; cash = ending balance)</span>
       </div>
       <div className="table-scroll">
         <table className="metrics detail num">
