@@ -64,7 +64,7 @@ export function CompaniesTab({ clients, currentRealmId, onDisconnect }: Props) {
         </table>
       </div>
       <p className="var-caption" style={{ padding: '0 18px 14px' }}>
-        Connecting opens Intuit&rsquo;s sign-in page — pick the client&rsquo;s company and approve access.
+        Connecting opens Intuit&rsquo;s sign-in page. Pick the client&rsquo;s company and approve access.
         Disconnecting revokes the QuickBooks authorization and removes the synced data.
       </p>
     </div>

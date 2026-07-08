@@ -13,7 +13,7 @@ export class ApiError extends Error {
   }
 }
 
-// Express error middleware — must keep the 4-arg signature.
+// Express error middleware; must keep the 4-arg signature.
 export function errorMiddleware(err: unknown, _req: Request, res: Response, _next: NextFunction): void {
   if (err instanceof ApiError) {
     res.status(err.status).json({ error: err.message, code: err.code });

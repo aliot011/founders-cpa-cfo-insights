@@ -182,7 +182,7 @@ export function updateCompanyInfo(realmId: string, companyName: string, companyS
   );
 }
 
-/** Persist rotated tokens. Called on every refresh — rotation makes this mandatory. */
+/** Persist rotated tokens. Called on every refresh; rotation makes this mandatory. */
 export function saveTokens(realmId: string, tokens: TokenSet): void {
   db.prepare(
     `UPDATE connections SET

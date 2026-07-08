@@ -58,7 +58,7 @@ function payeeOf(e: LedgerEntry): string {
 const sum = (cells: number[]) => cells.reduce((a, b) => a + b, 0);
 const byTotalDesc = (a: ChildRow, b: ChildRow) => b.total - a.total || a.label.localeCompare(b.label);
 
-/** Only P&L accounts belong in a spend pivot — balance-sheet legs (cash, A/P, credit cards) would double-count every payment. */
+/** Only P&L accounts belong in a spend pivot; balance-sheet legs (cash, A/P, credit cards) would double-count every payment. */
 const PNL_CATS = new Set<Category>(PNL_CATEGORIES);
 
 export function VendorSpend({ entries, accountMap }: Props) {
@@ -301,7 +301,7 @@ export function VendorSpend({ entries, accountMap }: Props) {
             Click a row to break it down by {rowMode === 'vendor' ? 'account' : 'vendor'}. Amounts are net
             debits to the selected accounts, so credits and refunds reduce spend.
             {!hasVendorData &&
-              ' This ledger has no Vendor, Customer, or Name columns, so lines are grouped under “(No payee)” — re-export with a Vendor column for a payee breakdown.'}
+              ' This ledger has no Vendor, Customer, or Name columns, so lines are grouped under “(No payee)”. Re-export with a Vendor column for a payee breakdown.'}
             {partials.length > 0 && (
               <>
                 {' '}

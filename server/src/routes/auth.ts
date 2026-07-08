@@ -21,7 +21,7 @@ authRouter.get('/callback', async (req, res) => {
     const { code, state, realmId, error } = req.query as Record<string, string | undefined>;
     if (error) return fail(error);
     if (!code || !realmId) return fail('QuickBooks did not return an authorization code.');
-    if (!state || state !== req.cookies?.[STATE_COOKIE]) return fail('OAuth state mismatch — please try connecting again.');
+    if (!state || state !== req.cookies?.[STATE_COOKIE]) return fail('OAuth state mismatch. Please try connecting again.');
     res.clearCookie(STATE_COOKIE);
 
     const tokens = await exchangeCode(code);

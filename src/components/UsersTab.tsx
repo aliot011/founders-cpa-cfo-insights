@@ -167,7 +167,7 @@ export function UsersTab({ clients }: Props) {
         {users && users.length === 0 && (
           <p className="sync-empty" style={{ marginTop: 16 }}>
             No users yet. Add yourself as an admin, your team as advisors, and client contacts as clients
-            scoped to their companies — sign-in will use this directory.
+            scoped to their companies. Sign-in will use this directory.
           </p>
         )}
       </div>

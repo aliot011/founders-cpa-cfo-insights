@@ -219,7 +219,7 @@ export function Dashboard({ dataset, onMapChange, syncTab, side, tab, slug, chec
         <>
           <PageHeader
             title="Vendor Spend"
-            subtitle="A tiered pivot of spend across periods for the accounts you choose — vendors broken down by account, or accounts broken down by vendor — so you can see exactly who you pay and how that spend is trending."
+            subtitle="A tiered pivot of spend across periods for the accounts you choose, with vendors broken down by account or accounts broken down by vendor, so you can see exactly who you pay and how that spend is trending."
           />
           {!hasReportData && reportEmptyCallout}
           {hasReportData && (

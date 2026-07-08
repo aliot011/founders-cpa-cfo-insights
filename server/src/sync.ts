@@ -24,7 +24,7 @@ export interface SyncResult {
 
 /**
  * Merge freshly classified QBO accounts into the saved map without ever
- * overwriting an existing key — the user's manual overrides must survive
+ * overwriting an existing key: the user's manual overrides must survive
  * every re-sync. Returns the names that were newly added.
  */
 export function mergeAccountMap(existing: AccountMap, fromQbo: AccountMap): { map: AccountMap; added: string[] } {
@@ -91,7 +91,7 @@ export async function runSync(
       `Synced ${entries.length.toLocaleString()} transactions across ${new Set(entries.map((e) => e.account)).size} accounts (${startDate} → ${endDate}, ${conn.accounting_method.toLowerCase()} basis).`,
     );
     if (added.length > 0) {
-      notes.push(`Auto-categorized ${added.length} new account(s) — review them in the Accounts tab.`);
+      notes.push(`Auto-categorized ${added.length} new account(s). Review them in the Accounts tab.`);
     }
     const openingCount = Object.keys(openingBalances).length;
     if (openingCount > 0) {

@@ -3,7 +3,7 @@ import { qboFetch } from './client.ts';
 import type { GeneralLedgerReport, ReportColumn, ReportRow } from './types.ts';
 
 // All values below are from the documented supported `columns=` list for the
-// GeneralLedger report. `subt_nat_amount` must be requested explicitly — the
+// GeneralLedger report. `subt_nat_amount` must be requested explicitly; the
 // API returns no amount column otherwise. It is the natural-sign amount;
 // `computeCategorySigns()` in src/lib/metrics.ts normalizes per-category
 // signs downstream, so it is used as-is. `rbal_nat_amount` (running balance)
@@ -43,7 +43,7 @@ function colKey(column: ReportColumn): string | undefined {
 }
 
 /**
- * Index columns from the response's own metadata — never by position. The
+ * Index columns from the response's own metadata, never by position. The
  * column set and order drift with the request and company features (classes,
  * locations, sales tax).
  */
@@ -68,7 +68,7 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 /**
  * Flatten a GeneralLedger report into LedgerEntry rows.
  *
- * Walks every nested row collecting `type: "Data"` rows only — Intuit
+ * Walks every nested row collecting `type: "Data"` rows only; Intuit
  * documents the section hierarchy as broken for some sub-account setups, so
  * nesting is never trusted for the account: each Data row's own account_name
  * column carries the fully-qualified "Parent:Sub" path, with the nearest
@@ -144,7 +144,7 @@ function isEmptyReport(report: GeneralLedgerReport): boolean {
   return report.Header?.Option?.some((o) => o.Name === 'NoReportData' && o.Value === 'true') ?? false;
 }
 
-/** Calendar-year chunks covering [startDate, endDate] — the report API has no pagination. */
+/** Calendar-year chunks covering [startDate, endDate]; the report API has no pagination. */
 export function yearChunks(startDate: string, endDate: string): { start: string; end: string }[] {
   const startYear = Number(startDate.slice(0, 4));
   const endYear = Number(endDate.slice(0, 4));

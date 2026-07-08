@@ -18,7 +18,7 @@ export interface MultiAccountVendor {
 
 /**
  * Vendors whose spend hits more than one expense account within the trailing
- * window — worth a look for inconsistent coding (the same vendor booked to
+ * window, worth a look for inconsistent coding (the same vendor booked to
  * different G/L accounts in different months), though multi-account vendors
  * can be legitimate.
  */

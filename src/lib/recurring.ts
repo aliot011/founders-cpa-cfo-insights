@@ -35,7 +35,7 @@ export interface RecurringMiss {
 
 /**
  * Vendors with a consecutive-month spend streak running right up to the month
- * before `targetMonth`, but zero transactions in `targetMonth` itself — the
+ * before `targetMonth`, but zero transactions in `targetMonth` itself: the
  * "monthly contractor JE that didn't happen this month" detector.
  *
  * Works over the full (uncapped) ledger; lines without a vendor/payee are
@@ -79,7 +79,7 @@ export function findMissingRecurringVendors(
   const misses: RecurringMiss[] = [];
 
   for (const [vendor, v] of byVendor) {
-    if (v.months.has(targetMonth)) continue; // present — nothing to flag
+    if (v.months.has(targetMonth)) continue; // present; nothing to flag
 
     // Walk backwards from the month before the target while activity continues.
     const streakMonths: VendorMonth[] = [];

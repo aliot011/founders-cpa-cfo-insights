@@ -38,7 +38,7 @@ function hostFor(environment: 'sandbox' | 'production'): string {
  * The two URLs of the company-safe open flow, or null when the type has no
  * known edit URL. QBO's switchCompany endpoint flips the session onto the
  * right company but always lands on the homepage (it ignores destination
- * params — tested), so the caller opens `switchUrl` and then steers the same
+ * params; tested live), so the caller opens `switchUrl` and then steers the same
  * tab to `txnUrl` a few seconds later. Even if that second hop never fires,
  * the tab is in the right company.
  */
@@ -85,7 +85,7 @@ export function openInQbo(switchUrl: string, targetUrl: string): void {
     try {
       w.location.href = targetUrl;
     } catch {
-      // Tab was closed — nothing to steer.
+      // Tab was closed; nothing to steer.
     }
   }, QBO_SWITCH_DELAY_MS);
 }

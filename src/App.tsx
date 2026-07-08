@@ -260,7 +260,7 @@ function CompanyRoute({ side, clients, refreshClients }: RouteProps & { side: 'c
   function handleMapChange(map: AccountMap) {
     if (!dataset || !realmId) return;
     setDataset({ ...dataset, accountMap: map });
-    // Debounced persist — mapping edits come in bursts from the Accounts tab.
+    // Debounced persist: mapping edits come in bursts from the Accounts tab.
     if (mapSaveTimer.current !== null) window.clearTimeout(mapSaveTimer.current);
     mapSaveTimer.current = window.setTimeout(() => {
       api.saveAccountMap(realmId, map).catch((err) => {
@@ -386,7 +386,7 @@ function AdminRoute({ clients, refreshClients }: RouteProps) {
           <>
             <PageHeader
               title="Companies"
-              subtitle="Every QuickBooks company connected to the practice — open one, connect another, or disconnect one you no longer serve."
+              subtitle="Every QuickBooks company connected to the practice. Open one, connect another, or disconnect one you no longer serve."
             />
             <div className="section">
               <CompaniesTab
