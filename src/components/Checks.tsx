@@ -16,10 +16,8 @@ interface CheckDef {
   id: CheckId;
   label: string;
   title: string;
-  /** Kind-filter / tag label for the non-journal bucket. */
+  /** Kind label for the non-journal bucket. */
   otherKind: string;
-  /** The counterparty column that IS present on these rows. */
-  counterpart: 'customer' | 'vendor';
   emptyText: string;
   caption: string;
 }
@@ -30,7 +28,6 @@ const CHECKS: CheckDef[] = [
     label: 'Missing vendors',
     title: 'Expense transactions without a vendor',
     otherKind: 'Expense',
-    counterpart: 'customer',
     emptyText:
       'Every expense line carries a vendor (or payee) name — nothing to fix. This check covers accounts ' +
       'categorized as COGS, Operating Expenses, or Other Expense, including journal entries.',
@@ -44,7 +41,6 @@ const CHECKS: CheckDef[] = [
     label: 'Missing customers',
     title: 'Revenue transactions without a customer',
     otherKind: 'Sale',
-    counterpart: 'vendor',
     emptyText:
       'Every revenue line carries a customer (or payee) name — nothing to fix. This check covers accounts ' +
       'categorized as Revenue, including journal entries.',
@@ -113,7 +109,6 @@ export function Checks({ entries, accountMap }: Props) {
 
 function CheckPanel({ def, flagged }: { def: CheckDef; flagged: LedgerEntry[] }) {
   const total = flagged.reduce((t, e) => t + e.amount, 0);
-  const counterpartLabel = def.counterpart === 'customer' ? 'Customer' : 'Vendor';
 
   return (
     <div className="panel">
@@ -141,7 +136,6 @@ function CheckPanel({ def, flagged }: { def: CheckDef; flagged: LedgerEntry[] })
                   <th>Transaction Type</th>
                   <th>Account</th>
                   <th>Memo</th>
-                  <th>{counterpartLabel}</th>
                   <th className="checks-amount">Amount</th>
                 </tr>
               </thead>
@@ -153,7 +147,6 @@ function CheckPanel({ def, flagged }: { def: CheckDef; flagged: LedgerEntry[] })
                     <td>{e.transactionType || '—'}</td>
                     <td>{e.account}</td>
                     <td className="checks-memo">{e.memo || ''}</td>
-                    <td>{e[def.counterpart] || ''}</td>
                     <td className="checks-amount num">{formatCurrencyExact(e.amount)}</td>
                   </tr>
                 ))}
