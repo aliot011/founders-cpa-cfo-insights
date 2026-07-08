@@ -24,9 +24,16 @@ const CHECK_LABELS: Record<CheckId, string> = {
   'missing-customer': 'Missing customers',
   'missing-recurring': 'Missing recurring',
   'multi-account': 'Multi-account vendors',
+  'parent-account': 'Parent accounts',
 };
 
-const CHECK_ORDER: CheckId[] = ['missing-vendor', 'missing-customer', 'missing-recurring', 'multi-account'];
+const CHECK_ORDER: CheckId[] = [
+  'missing-vendor',
+  'missing-customer',
+  'missing-recurring',
+  'multi-account',
+  'parent-account',
+];
 
 /** Journal entries get their own bucket; every other flagged type is per-check. */
 function isJournalEntry(e: LedgerEntry): boolean {
@@ -61,11 +68,21 @@ export function Checks({ entries, accountMap, slug, check, closedThrough }: Prop
   const cat = (e: LedgerEntry) => accountMap[e.account] ?? 'ignore';
   const flagged = useMemo(() => {
     const inMonth = entries.filter((e) => e.month === reviewMonth);
+    // Every account that has at least one sub-account under it ("A" and
+    // "A:B" for "A:B:C"), from the full chart of accounts.
+    const parentAccounts = new Set<string>();
+    for (const account of Object.keys(accountMap)) {
+      const parts = account.split(':');
+      for (let i = 1; i < parts.length; i++) parentAccounts.add(parts.slice(0, i).join(':'));
+    }
     return {
       'missing-vendor': inMonth.filter((e) => SPEND_CATS.has(cat(e)) && !e.vendor && !e.name).sort(byDateDesc),
       'missing-customer': inMonth.filter((e) => cat(e) === 'revenue' && !e.customer && !e.name).sort(byDateDesc),
       'missing-recurring': reviewMonth ? findMissingRecurringVendors(entries, accountMap, reviewMonth) : [],
       'multi-account': reviewMonth ? findMultiAccountVendors(entries, accountMap, reviewMonth) : [],
+      'parent-account': inMonth
+        .filter((e) => SPEND_CATS.has(cat(e)) && parentAccounts.has(e.account))
+        .sort(byDateDesc),
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entries, accountMap, reviewMonth]);
@@ -142,6 +159,17 @@ export function Checks({ entries, accountMap, slug, check, closedThrough }: Prop
       {check === 'multi-account' && (
         <MultiAccountPanel vendors={flagged['multi-account']} monthLabel={monthLabel} />
       )}
+
+      {check === 'parent-account' && (
+        <TransactionPanel
+          title={`Expenses posted to parent accounts in ${monthLabel}`}
+          otherKind="Expense"
+          flagged={flagged['parent-account']}
+          showPayee
+          emptyText={`No ${monthLabel} expenses are posted directly to an account that has sub-accounts — everything is coded down to a leaf account.${maybeOpen}`}
+          caption={`These ${monthLabel} lines are coded to a parent account even though it has sub-accounts, so reports show them as the parent's "Other" bucket instead of rolling up cleanly. Recode each to the most specific sub-account in QuickBooks, then re-sync.${maybeOpen}`}
+        />
+      )}
     </>
   );
 }
@@ -154,9 +182,11 @@ interface TransactionPanelProps {
   flagged: LedgerEntry[];
   emptyText: string;
   caption: string;
+  /** Show the payee column (omitted on the missing-payee checks, where it is empty by definition). */
+  showPayee?: boolean;
 }
 
-function TransactionPanel({ title, otherKind, flagged, emptyText, caption }: TransactionPanelProps) {
+function TransactionPanel({ title, otherKind, flagged, emptyText, caption, showPayee }: TransactionPanelProps) {
   return (
     <div className="panel">
       <div className="panel-head">
@@ -176,6 +206,7 @@ function TransactionPanel({ title, otherKind, flagged, emptyText, caption }: Tra
                   <th>Date</th>
                   <th>Kind</th>
                   <th>Transaction Type</th>
+                  {showPayee && <th>Payee</th>}
                   <th>Account</th>
                   <th>Memo</th>
                   <th className="checks-amount">Amount</th>
@@ -187,6 +218,7 @@ function TransactionPanel({ title, otherKind, flagged, emptyText, caption }: Tra
                     <td>{usDate(e.date)}</td>
                     <td>{isJournalEntry(e) ? 'JE' : otherKind}</td>
                     <td>{e.transactionType || '—'}</td>
+                    {showPayee && <td>{e.vendor || e.name || e.customer || '—'}</td>}
                     <td>{e.account}</td>
                     <td className="checks-memo">{e.memo || ''}</td>
                     <td className="checks-amount num">{formatCurrencyExact(e.amount)}</td>
