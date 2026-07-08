@@ -19,7 +19,9 @@ export interface Vendor1099Row {
 export interface Vendor1099Report {
   /** 1099-tracked vendors missing the tax ID, address, or email needed to file / chase a W-9. */
   incomplete: Vendor1099Row[];
-  /** Vendors with spend in the window that aren't 1099-tracked at all (corps are legitimately here). */
+  /** Untracked vendors whose first-ever spend is in the review month: collect the W-9 now. */
+  newUntracked: Vendor1099Row[];
+  /** Established vendors with spend in the window that aren't 1099-tracked (corps are legitimately here). */
   untracked: Vendor1099Row[];
 }
 
@@ -39,12 +41,17 @@ export function build1099Readiness(
   const mult = computeCategorySigns(entries, accountMap);
 
   const activity = new Map<string, { spend: number; lastPaid: string }>();
+  // First spend month per payee over the whole synced ledger, so "new this
+  // month" means no expense activity in any earlier month.
+  const firstSpend = new Map<string, string>();
   for (const e of entries) {
     const cat = accountMap[e.account] ?? 'ignore';
     if (!SPEND_CATS.has(cat)) continue;
-    if (e.month < windowStart || e.month > reviewMonth) continue;
     const payee = e.vendor || e.name;
     if (!payee) continue;
+    const first = firstSpend.get(payee);
+    if (!first || e.month < first) firstSpend.set(payee, e.month);
+    if (e.month < windowStart || e.month > reviewMonth) continue;
     const a = activity.get(payee) ?? { spend: 0, lastPaid: e.date };
     a.spend += e.amount * mult[cat];
     if (e.date > a.lastPaid) a.lastPaid = e.date;
@@ -52,16 +59,25 @@ export function build1099Readiness(
   }
 
   const incomplete: Vendor1099Row[] = [];
+  const newUntracked: Vendor1099Row[] = [];
   const untracked: Vendor1099Row[] = [];
   for (const vendor of vendors) {
     const a = activity.get(vendor.name);
     if (!a) continue; // no spend in the window; not this year's problem
     const row = { vendor, spend: a.spend, lastPaid: a.lastPaid };
-    if (vendor.tracked1099 && (!vendor.hasTaxId || !vendor.hasAddress || !vendor.hasEmail)) incomplete.push(row);
-    else if (!vendor.tracked1099) untracked.push(row);
+    if (vendor.tracked1099 && (!vendor.hasTaxId || !vendor.hasAddress || !vendor.hasEmail)) {
+      incomplete.push(row);
+    } else if (!vendor.tracked1099) {
+      if (firstSpend.get(vendor.name) === reviewMonth) newUntracked.push(row);
+      else untracked.push(row);
+    }
   }
 
   const bySpend = (a: Vendor1099Row, b: Vendor1099Row) =>
     b.spend - a.spend || a.vendor.name.localeCompare(b.vendor.name);
-  return { incomplete: incomplete.sort(bySpend), untracked: untracked.sort(bySpend) };
+  return {
+    incomplete: incomplete.sort(bySpend),
+    newUntracked: newUntracked.sort(bySpend),
+    untracked: untracked.sort(bySpend),
+  };
 }

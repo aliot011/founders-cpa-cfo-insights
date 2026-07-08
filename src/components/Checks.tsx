@@ -121,14 +121,17 @@ export function Checks({ entries, accountMap, slug, check, closedThrough, qboEnv
         .filter((e) => SPEND_CATS.has(cat(e)) && parentAccounts.has(e.account))
         .sort(byDateDesc),
       'vendor-1099': reviewMonth
-        ? build1099Readiness(entries, accountMap, vendors, reviewMonth).incomplete
+        ? (() => {
+            const r = build1099Readiness(entries, accountMap, vendors, reviewMonth);
+            return [...r.incomplete, ...r.newUntracked];
+          })()
         : [],
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entries, accountMap, vendors, reviewMonth]);
 
   const readiness = useMemo(
-    () => (reviewMonth ? build1099Readiness(entries, accountMap, vendors, reviewMonth) : { incomplete: [], untracked: [] }),
+    () => (reviewMonth ? build1099Readiness(entries, accountMap, vendors, reviewMonth) : { incomplete: [], newUntracked: [], untracked: [] }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [entries, accountMap, vendors, reviewMonth],
   );
@@ -432,7 +435,7 @@ function MultiAccountPanel({ vendors, monthLabel }: { vendors: MultiAccountVendo
 // ---- 1099 / W-9 readiness --------------------------------------------------
 
 interface Vendor1099PanelProps {
-  readiness: { incomplete: Vendor1099Row[]; untracked: Vendor1099Row[] };
+  readiness: { incomplete: Vendor1099Row[]; newUntracked: Vendor1099Row[]; untracked: Vendor1099Row[] };
   monthLabel: string;
   env: QboEnv;
   realmId: string;
@@ -503,12 +506,53 @@ function Vendor1099Panel({ readiness, monthLabel, env, realmId, companyName }: V
 
       <div className="panel check-vendor-section">
         <div className="panel-head">
-          <h3>Paid vendors not tracked for 1099</h3>
+          <h3>New vendors in {monthLabel} not tracked for 1099</h3>
+        </div>
+        {readiness.newUntracked.length === 0 ? (
+          <div className="panel-body">
+            <p className="sync-empty">
+              No vendor received their first-ever payment in {monthLabel} without a 1099 designation.
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="table-scroll">
+              <table className="metrics checks">
+                <thead>
+                  <tr>
+                    <th>Vendor</th>
+                    <th className="checks-amount">Spend ({monthLabel})</th>
+                    <th>Last paid</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {readiness.newUntracked.map((r) => (
+                    <tr key={r.vendor.id}>
+                      <td>{vendorLink(r)}</td>
+                      <td className="checks-amount num">{formatCurrencyExact(r.spend)}</td>
+                      <td>{usDate(r.lastPaid)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="var-caption" style={{ padding: '0 18px 14px' }}>
+              These vendors had never been paid before {monthLabel} and are not marked for 1099 tracking.
+              The easiest time to collect a W-9 is while the relationship is new; decide now whether each
+              needs tracking, and flip the setting on the vendor page (click through).
+            </p>
+          </>
+        )}
+      </div>
+
+      <div className="panel check-vendor-section">
+        <div className="panel-head">
+          <h3>Established vendors not tracked for 1099</h3>
         </div>
         {readiness.untracked.length === 0 ? (
           <div className="panel-body">
             <p className="sync-empty">
-              Every vendor paid in the year ending {monthLabel} is 1099-tracked.
+              Every established vendor paid in the year ending {monthLabel} is 1099-tracked.
             </p>
           </div>
         ) : (
@@ -536,8 +580,8 @@ function Vendor1099Panel({ readiness, monthLabel, env, realmId, companyName }: V
             <p className="var-caption" style={{ padding: '0 18px 14px' }}>
               The annual W-9 sweep list: vendors with spend in the year ending {monthLabel} whose profile has
               &ldquo;Track payments for 1099&rdquo; off. Corporations and card-paid vendors are legitimately
-              untracked; the API cannot see entity type, so dismiss those by eye. Only the incomplete-profile
-              list above counts toward this check&rsquo;s badge.
+              untracked; the API cannot see entity type, so dismiss those by eye. This list stays out of the
+              check&rsquo;s badge; the two above count.
             </p>
           </>
         )}
