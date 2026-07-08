@@ -36,11 +36,13 @@ export function tabForSegment(side: Side, segment: string | undefined): TabId | 
 
 // ---- Checks sub-routes: /advisor/:company/checks/:check ----------------
 
-export type CheckId = 'missing-vendor' | 'missing-customer';
+export type CheckId = 'missing-vendor' | 'missing-customer' | 'missing-recurring' | 'multi-account';
 
 export const CHECK_SEGMENTS: { id: CheckId; segment: string }[] = [
   { id: 'missing-vendor', segment: 'missing-vendors' },
   { id: 'missing-customer', segment: 'missing-customers' },
+  { id: 'missing-recurring', segment: 'missing-recurring' },
+  { id: 'multi-account', segment: 'multi-account-vendors' },
 ];
 
 export const DEFAULT_CHECK_SEGMENT = CHECK_SEGMENTS[0].segment;

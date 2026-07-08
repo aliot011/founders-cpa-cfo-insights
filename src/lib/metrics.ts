@@ -1,4 +1,4 @@
-import { ALL_CATEGORIES, type AccountMap, type Category, type LedgerEntry, type MonthlyMetrics } from '../types';
+import { ALL_CATEGORIES, type AccountMap, type Category, type LedgerEntry, type MonthlyMetrics } from '../types.ts';
 
 /** A zeroed record with every category as a key. */
 export function zeroByCategory(): Record<Category, number> {

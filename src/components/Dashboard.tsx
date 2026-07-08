@@ -220,7 +220,13 @@ export function Dashboard({ dataset, onMapChange, syncTab, side, tab, slug, chec
           {!hasData && emptyCallout}
           {hasData && check && (
             <div className="section">
-              <Checks entries={dataset.entries} accountMap={dataset.accountMap} slug={slug} check={check} />
+              <Checks
+                entries={dataset.entries}
+                accountMap={dataset.accountMap}
+                slug={slug}
+                check={check}
+                closedThrough={closedThrough}
+              />
             </div>
           )}
         </>

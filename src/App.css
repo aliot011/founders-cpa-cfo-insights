@@ -892,6 +892,10 @@ table.checks td.checks-memo {
   min-width: 220px;
   color: var(--ink-2);
 }
+/* Stacked per-vendor sections (multi-account check). */
+.check-vendor-section {
+  margin-bottom: 14px;
+}
 
 /* ---- Vendor spend ------------------------------------------------------ */
 /* Panels hosting a dropdown must not clip it; the table keeps its own
