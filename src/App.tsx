@@ -6,6 +6,7 @@ import { formatMonth } from './lib/format';
 import { clearLastClient, loadLastClient, saveLastClient } from './lib/storage';
 import { ClientPicker } from './components/ClientPicker';
 import { CompaniesTab } from './components/CompaniesTab';
+import { CompanySwitchModal } from './components/CompanySwitchModal';
 import { Dashboard } from './components/Dashboard';
 import { SyncTab } from './components/SyncTab';
 import { UsersTab } from './components/UsersTab';
@@ -45,6 +46,7 @@ export default function App() {
   const [connectError, setConnectError] = useState<string | null>(null);
   // Force Dashboard remount (and tab reset) when switching clients.
   const [dashKey, setDashKey] = useState(0);
+  const [switcherOpen, setSwitcherOpen] = useState(false);
   const mapSaveTimer = useRef<number | null>(null);
 
   const refreshClients = useCallback(async (): Promise<ClientSummary[]> => {
@@ -151,28 +153,27 @@ export default function App() {
         </div>
         {client && clients && (
           <div className="topbar-client">
-            {clients.length > 1 ? (
-              <select
-                className="client-switcher"
-                value={client.realmId}
-                onChange={(e) => selectClient(e.target.value)}
-                aria-label="Switch client"
-              >
-                {clients.map((c) => (
-                  <option key={c.realmId} value={c.realmId}>
-                    {c.companyName}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <span className="topbar-client-name">{client.companyName}</span>
-            )}
+            <span className="topbar-client-name">{client.companyName}</span>
             <span className="topbar-closed">
               {closedMonthLabel ? `Closed through ${formatMonth(closedMonthLabel)}` : 'Not synced yet'}
             </span>
+            {clients.length > 1 && (
+              <button className="link-btn" onClick={() => setSwitcherOpen(true)}>
+                Switch company
+              </button>
+            )}
           </div>
         )}
       </header>
+
+      {switcherOpen && client && clients && (
+        <CompanySwitchModal
+          clients={clients}
+          currentRealmId={client.realmId}
+          onSelect={selectClient}
+          onClose={() => setSwitcherOpen(false)}
+        />
+      )}
 
       <main className="content">
         {clients === null ? (

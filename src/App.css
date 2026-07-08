@@ -211,17 +211,114 @@
   text-decoration: none;
 }
 
-/* ---- Sync tab ---------------------------------------------------------- */
-.client-switcher {
+/* Small link-style action (e.g. "Switch company" in the topbar). */
+.link-btn {
+  border: none;
+  background: none;
+  padding: 0;
   font-family: inherit;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
-  padding: 7px 10px;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-sm);
+  color: var(--accent-dark);
+  cursor: pointer;
+}
+.link-btn:hover {
+  text-decoration: underline;
+}
+
+/* ---- Modal ------------------------------------------------------------- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 26, 23, 0.4);
+  z-index: 50;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 12vh 20px 20px;
+}
+.modal {
   background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  width: 100%;
+  max-width: 440px;
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 10px;
+}
+.modal-head h3 {
+  font-size: 15px;
+}
+.modal-close {
+  border: none;
+  background: none;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 2px 6px;
+}
+.modal-close:hover {
   color: var(--ink);
 }
+.modal-search {
+  margin: 0 16px 10px;
+  padding: 9px 12px;
+  font-family: inherit;
+  font-size: 13px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+}
+.modal-search:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.modal-list {
+  overflow-y: auto;
+  padding: 0 8px 10px;
+}
+.modal-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 14px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--ink);
+}
+.modal-item:hover {
+  background: var(--accent-soft);
+}
+.modal-item.current .modal-item-name {
+  font-weight: 700;
+  color: var(--accent-dark);
+}
+.modal-item-meta {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.modal-empty {
+  padding: 8px 10px;
+  font-size: 13px;
+}
+
+/* ---- Sync tab ---------------------------------------------------------- */
 .app-loading {
   color: var(--muted);
   text-align: center;
