@@ -22,19 +22,36 @@ interface Props {
 
 export type TabId = 'summary' | 'kpis' | 'detail' | 'variance' | 'vendors' | 'checks' | 'accounts' | 'sync';
 
-const TABS: { id: TabId; label: string }[] = [
-  { id: 'summary', label: 'Summary' },
-  { id: 'kpis', label: 'KPIs' },
-  { id: 'detail', label: 'Detail' },
-  { id: 'variance', label: 'Flux' },
-  { id: 'vendors', label: 'Vendor Spend' },
-  { id: 'checks', label: 'Checks' },
-  { id: 'accounts', label: 'Accounts' },
-  { id: 'sync', label: 'Sync' },
-];
+/** The two sides of the app: what a client sees vs. the advisor's workbench. */
+type Side = 'client' | 'advisor';
+
+const SIDE_TABS: Record<Side, { id: TabId; label: string }[]> = {
+  client: [
+    { id: 'summary', label: 'Summary' },
+    { id: 'kpis', label: 'KPIs' },
+    { id: 'detail', label: 'Detail' },
+    { id: 'variance', label: 'Flux' },
+    { id: 'vendors', label: 'Vendor Spend' },
+  ],
+  advisor: [
+    { id: 'checks', label: 'Checks' },
+    { id: 'accounts', label: 'Accounts' },
+    { id: 'sync', label: 'Sync' },
+  ],
+};
+
+const sideOf = (tab: TabId): Side =>
+  SIDE_TABS.client.some((t) => t.id === tab) ? 'client' : 'advisor';
 
 export function Dashboard({ dataset, onMapChange, syncTab, initialTab, closedThrough }: Props) {
-  const [tab, setTab] = useState<TabId>(initialTab ?? 'summary');
+  const [side, setSide] = useState<Side>(initialTab ? sideOf(initialTab) : 'client');
+  // Each side remembers its own active tab.
+  const [tabBySide, setTabBySide] = useState<Record<Side, TabId>>({
+    client: initialTab && sideOf(initialTab) === 'client' ? initialTab : 'summary',
+    advisor: initialTab && sideOf(initialTab) === 'advisor' ? initialTab : 'checks',
+  });
+  const tab = tabBySide[side];
+  const setTab = (t: TabId) => setTabBySide((prev) => ({ ...prev, [side]: t }));
   const [kpiMonth, setKpiMonth] = useState<string | null>(null); // null = latest
 
   // Reporting tabs stop at the most recent closed month; Checks and Accounts
@@ -74,7 +91,7 @@ export function Dashboard({ dataset, onMapChange, syncTab, initialTab, closedThr
   return (
     <>
       <nav className="tabs" role="tablist">
-        {TABS.map((t) => (
+        {SIDE_TABS[side].map((t) => (
           <button
             key={t.id}
             role="tab"
@@ -85,6 +102,15 @@ export function Dashboard({ dataset, onMapChange, syncTab, initialTab, closedThr
             {t.label}
           </button>
         ))}
+        <div className="tabs-meta">
+          <div className="seg" role="group" aria-label="Portal">
+            {(['client', 'advisor'] as Side[]).map((s) => (
+              <button key={s} className={side === s ? 'active' : ''} onClick={() => setSide(s)}>
+                {s === 'client' ? 'Client' : 'Advisor'}
+              </button>
+            ))}
+          </div>
+        </div>
       </nav>
 
       {tab === 'summary' && (
