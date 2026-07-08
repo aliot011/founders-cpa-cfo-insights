@@ -64,6 +64,7 @@ clientsRouter.get('/:realmId/dataset', (req, res) => {
     entries: JSON.parse(ds.entries_json),
     accountMap: JSON.parse(ds.account_map_json),
     openingBalances: JSON.parse(ds.opening_balances_json || '{}'),
+    vendors: JSON.parse(ds.vendors_json || '[]'),
     startDate: ds.start_date,
     endDate: ds.end_date,
     notes: JSON.parse(ds.notes_json),

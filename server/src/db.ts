@@ -2,7 +2,7 @@ import Database from 'better-sqlite3';
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { AccountingMethod, AccountMap, LedgerEntry } from '../../src/types.ts';
+import type { AccountingMethod, AccountMap, LedgerEntry, VendorProfile } from '../../src/types.ts';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const dataDir = path.join(repoRoot, 'data');
@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS datasets (
   entries_json TEXT NOT NULL,
   account_map_json TEXT NOT NULL,
   opening_balances_json TEXT NOT NULL DEFAULT '{}',
+  vendors_json TEXT NOT NULL DEFAULT '[]',
   start_date TEXT NOT NULL,
   end_date TEXT NOT NULL,
   notes_json TEXT NOT NULL DEFAULT '[]',
@@ -85,6 +86,9 @@ CREATE TABLE IF NOT EXISTS user_companies (
   if (!dsCols.some((c) => c.name === 'opening_balances_json')) {
     db.exec(`ALTER TABLE datasets ADD COLUMN opening_balances_json TEXT NOT NULL DEFAULT '{}'`);
   }
+  if (!dsCols.some((c) => c.name === 'vendors_json')) {
+    db.exec(`ALTER TABLE datasets ADD COLUMN vendors_json TEXT NOT NULL DEFAULT '[]'`);
+  }
 }
 
 export interface ConnectionRow {
@@ -109,6 +113,7 @@ export interface DatasetRow {
   entries_json: string;
   account_map_json: string;
   opening_balances_json: string;
+  vendors_json: string;
   start_date: string;
   end_date: string;
   notes_json: string;
@@ -311,18 +316,20 @@ export function upsertDataset(args: {
   entries: LedgerEntry[];
   accountMap: AccountMap;
   openingBalances: Record<string, number>;
+  vendors: VendorProfile[];
   startDate: string;
   endDate: string;
   notes: string[];
 }): string {
   const lastSyncedAt = new Date().toISOString();
   db.prepare(
-    `INSERT INTO datasets (realm_id, entries_json, account_map_json, opening_balances_json, start_date, end_date, notes_json, last_synced_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `INSERT INTO datasets (realm_id, entries_json, account_map_json, opening_balances_json, vendors_json, start_date, end_date, notes_json, last_synced_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(realm_id) DO UPDATE SET
        entries_json = excluded.entries_json,
        account_map_json = excluded.account_map_json,
        opening_balances_json = excluded.opening_balances_json,
+       vendors_json = excluded.vendors_json,
        start_date = excluded.start_date,
        end_date = excluded.end_date,
        notes_json = excluded.notes_json,
@@ -332,6 +339,7 @@ export function upsertDataset(args: {
     JSON.stringify(args.entries),
     JSON.stringify(args.accountMap),
     JSON.stringify(args.openingBalances),
+    JSON.stringify(args.vendors),
     args.startDate,
     args.endDate,
     JSON.stringify(args.notes),

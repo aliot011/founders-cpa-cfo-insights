@@ -63,3 +63,29 @@ export function qboTxnUrls(
 export function qboSwitchUrl(environment: 'sandbox' | 'production', realmId: string): string {
   return `https://${hostFor(environment)}/app/switchCompany?companyId=${encodeURIComponent(realmId)}`;
 }
+
+/** A vendor's profile page in QBO (same company-switch caveats as transactions). */
+export function qboVendorUrl(environment: 'sandbox' | 'production', vendorId: string): string {
+  return `https://${hostFor(environment)}/app/vendordetail?nameId=${encodeURIComponent(vendorId)}`;
+}
+
+/** How long the switchCompany hop gets before we steer the tab to the target. */
+export const QBO_SWITCH_DELAY_MS = 5000;
+
+/**
+ * Open a QBO page company-safely: the tab starts on switchCompany (session
+ * flips to the right company), then we steer the same tab to the target. A
+ * cross-origin tab cannot be read, but a tab we opened can be navigated.
+ * Worst case the tab rests on the right company's homepage.
+ */
+export function openInQbo(switchUrl: string, targetUrl: string): void {
+  const w = window.open(switchUrl, '_blank');
+  if (!w) return;
+  window.setTimeout(() => {
+    try {
+      w.location.href = targetUrl;
+    } catch {
+      // Tab was closed — nothing to steer.
+    }
+  }, QBO_SWITCH_DELAY_MS);
+}

@@ -8,6 +8,7 @@ import {
 } from './db.ts';
 import { ApiError } from './errors.ts';
 import { buildQboAccountMap, fetchAllAccounts } from './qbo/accounts.ts';
+import { fetchVendorProfiles } from './qbo/vendors.ts';
 import { fetchGeneralLedger } from './qbo/generalLedger.ts';
 import { guessCategory } from '../../src/lib/classify.ts';
 
@@ -64,6 +65,7 @@ export async function runSync(
 
     const notes: string[] = [];
     const qboAccounts = await fetchAllAccounts(realmId);
+    const vendors = await fetchVendorProfiles(realmId);
     const { entries, skipped, openingBalances } = await fetchGeneralLedger(
       realmId,
       startDate,
@@ -97,7 +99,7 @@ export async function runSync(
     }
     if (skipped > 0) notes.push(`Skipped ${skipped} non-transaction row(s).`);
 
-    const lastSyncedAt = upsertDataset({ realmId, entries, accountMap: map, openingBalances, startDate, endDate, notes });
+    const lastSyncedAt = upsertDataset({ realmId, entries, accountMap: map, openingBalances, vendors, startDate, endDate, notes });
     finishSyncLog(logId, 'success', entries.length, notes.join(' '));
     return { lastSyncedAt, entryCount: entries.length, accountCount: Object.keys(map).length, notes };
   } catch (err) {

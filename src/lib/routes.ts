@@ -41,7 +41,8 @@ export type CheckId =
   | 'missing-customer'
   | 'missing-recurring'
   | 'multi-account'
-  | 'parent-account';
+  | 'parent-account'
+  | 'vendor-1099';
 
 export const CHECK_SEGMENTS: { id: CheckId; segment: string }[] = [
   { id: 'missing-vendor', segment: 'missing-vendors' },
@@ -49,6 +50,7 @@ export const CHECK_SEGMENTS: { id: CheckId; segment: string }[] = [
   { id: 'missing-recurring', segment: 'missing-recurring' },
   { id: 'multi-account', segment: 'multi-account-vendors' },
   { id: 'parent-account', segment: 'parent-accounts' },
+  { id: 'vendor-1099', segment: '1099-readiness' },
 ];
 
 export const DEFAULT_CHECK_SEGMENT = CHECK_SEGMENTS[0].segment;

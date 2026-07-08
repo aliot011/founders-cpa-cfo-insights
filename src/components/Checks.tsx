@@ -1,10 +1,11 @@
 import { useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import type { AccountMap, Category, LedgerEntry } from '../types';
+import type { AccountMap, Category, LedgerEntry, VendorProfile } from '../types';
 import { formatCurrency, formatCurrencyExact, formatMonth, formatMonthShort } from '../lib/format';
 import { findMissingRecurringVendors, type RecurringMiss } from '../lib/recurring';
 import { findMultiAccountVendors, type MultiAccountVendor } from '../lib/multiAccount';
-import { qboTxnUrls } from '../lib/qbo';
+import { build1099Readiness, type Vendor1099Row } from '../lib/vendor1099';
+import { openInQbo, qboSwitchUrl, qboTxnUrls, qboVendorUrl } from '../lib/qbo';
 import { checkSegment, companyPath, type CheckId } from '../lib/routes';
 
 type QboEnv = 'sandbox' | 'production';
@@ -21,6 +22,8 @@ interface Props {
   qboEnvironment: QboEnv;
   realmId: string;
   companyName: string;
+  /** Vendor profiles from the last sync (1099/W-9 fields). */
+  vendors: VendorProfile[];
 }
 
 /** Accounts whose lines count as expense activity for the checks. */
@@ -32,6 +35,7 @@ const CHECK_LABELS: Record<CheckId, string> = {
   'missing-recurring': 'Missing recurring',
   'multi-account': 'Multi-account vendors',
   'parent-account': 'Parent accounts',
+  'vendor-1099': '1099 readiness',
 };
 
 const CHECK_ORDER: CheckId[] = [
@@ -40,6 +44,7 @@ const CHECK_ORDER: CheckId[] = [
   'missing-recurring',
   'multi-account',
   'parent-account',
+  'vendor-1099',
 ];
 
 /** Journal entries get their own bucket; every other flagged type is per-check. */
@@ -56,48 +61,32 @@ function usDate(iso: string): string {
 const byDateDesc = (a: LedgerEntry, b: LedgerEntry) =>
   b.date.localeCompare(a.date) || a.account.localeCompare(b.account);
 
-/** How long the switchCompany hop gets before we steer the tab to the transaction. */
-const QBO_SWITCH_DELAY_MS = 5000;
+/** Company-safe link into QBO: switch hop first, then the target page. */
+function QboLink({ switchUrl, targetUrl, title, children }: { switchUrl: string; targetUrl: string; title: string; children: React.ReactNode }) {
+  function open(ev: React.MouseEvent) {
+    if (ev.metaKey || ev.ctrlKey || ev.button !== 0) return; // middle/cmd-click follows the href
+    ev.preventDefault();
+    openInQbo(switchUrl, targetUrl);
+  }
+  return (
+    <a className="txn-link" href={switchUrl} onClick={open} target="_blank" rel="noopener" title={title}>
+      {children} ↗
+    </a>
+  );
+}
 
 /** A date that deep-links to the transaction in QuickBooks when possible. */
 function TxnDate({ env, realmId, date, txn, companyName }: { env: QboEnv; realmId: string; date: string; txn: Pick<LedgerEntry, 'transactionType' | 'txnId'>; companyName: string }) {
   const urls = qboTxnUrls(env, realmId, txn);
   if (!urls) return <>{usDate(date)}</>;
-
-  // Open the tab on the company switch, keep its handle, then steer the same
-  // tab to the transaction once the switch has had time to land. We cannot
-  // read the cross-origin tab, but navigating a tab we opened is allowed.
-  // Worst case (tab closed early, timer never fires) the tab is on the right
-  // company's homepage — never the wrong books.
-  function open(ev: React.MouseEvent) {
-    if (ev.metaKey || ev.ctrlKey || ev.button !== 0) return; // middle/cmd-click follows the href
-    ev.preventDefault();
-    const w = window.open(urls!.switchUrl, '_blank');
-    if (!w) return;
-    window.setTimeout(() => {
-      try {
-        w.location.href = urls!.txnUrl;
-      } catch {
-        // Tab was closed — nothing to steer.
-      }
-    }, QBO_SWITCH_DELAY_MS);
-  }
-
   return (
-    <a
-      className="txn-link"
-      href={urls.switchUrl}
-      onClick={open}
-      target="_blank"
-      rel="noopener"
-      title={`Opens ${companyName} in QuickBooks, then this transaction (~5s)`}
-    >
-      {usDate(date)} ↗
-    </a>
+    <QboLink switchUrl={urls.switchUrl} targetUrl={urls.txnUrl} title={`Opens ${companyName} in QuickBooks, then this transaction (~5s)`}>
+      {usDate(date)}
+    </QboLink>
   );
 }
 
-export function Checks({ entries, accountMap, slug, check, closedThrough, qboEnvironment, realmId, companyName }: Props) {
+export function Checks({ entries, accountMap, slug, check, closedThrough, qboEnvironment, realmId, companyName, vendors }: Props) {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -131,9 +120,18 @@ export function Checks({ entries, accountMap, slug, check, closedThrough, qboEnv
       'parent-account': inMonth
         .filter((e) => SPEND_CATS.has(cat(e)) && parentAccounts.has(e.account))
         .sort(byDateDesc),
+      'vendor-1099': reviewMonth
+        ? build1099Readiness(entries, accountMap, vendors, reviewMonth).incomplete
+        : [],
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entries, accountMap, reviewMonth]);
+  }, [entries, accountMap, vendors, reviewMonth]);
+
+  const readiness = useMemo(
+    () => (reviewMonth ? build1099Readiness(entries, accountMap, vendors, reviewMonth) : { incomplete: [], untracked: [] }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [entries, accountMap, vendors, reviewMonth],
+  );
 
   if (!reviewMonth) return null;
   const monthLabel = formatMonth(reviewMonth);
@@ -212,6 +210,16 @@ export function Checks({ entries, accountMap, slug, check, closedThrough, qboEnv
 
       {check === 'multi-account' && (
         <MultiAccountPanel vendors={flagged['multi-account']} monthLabel={monthLabel} />
+      )}
+
+      {check === 'vendor-1099' && (
+        <Vendor1099Panel
+          readiness={readiness}
+          monthLabel={monthLabel}
+          env={qboEnvironment}
+          realmId={realmId}
+          companyName={companyName}
+        />
       )}
 
       {check === 'parent-account' && (
@@ -417,6 +425,122 @@ function MultiAccountPanel({ vendors, monthLabel }: { vendors: MultiAccountVendo
           </div>
         </div>
       ))}
+    </>
+  );
+}
+
+// ---- 1099 / W-9 readiness --------------------------------------------------
+
+interface Vendor1099PanelProps {
+  readiness: { incomplete: Vendor1099Row[]; untracked: Vendor1099Row[] };
+  monthLabel: string;
+  env: QboEnv;
+  realmId: string;
+  companyName: string;
+}
+
+function Vendor1099Panel({ readiness, monthLabel, env, realmId, companyName }: Vendor1099PanelProps) {
+  const vendorLink = (row: Vendor1099Row) => (
+    <QboLink
+      switchUrl={qboSwitchUrl(env, realmId)}
+      targetUrl={qboVendorUrl(env, row.vendor.id)}
+      title={`Opens ${companyName} in QuickBooks, then this vendor's profile (~5s)`}
+    >
+      {row.vendor.name}
+    </QboLink>
+  );
+  const mark = (ok: boolean) => (ok ? '✓' : '—');
+
+  return (
+    <>
+      <div className="panel check-vendor-section">
+        <div className="panel-head">
+          <h3>1099-tracked vendors with incomplete profiles</h3>
+        </div>
+        {readiness.incomplete.length === 0 ? (
+          <div className="panel-body">
+            <p className="sync-empty">
+              Every 1099-tracked vendor with spend in the year ending {monthLabel} has an address and email
+              on file. QuickBooks does not expose Tax IDs to the API, so confirm W-9s/Tax IDs on the vendor
+              pages themselves.
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="table-scroll">
+              <table className="metrics checks">
+                <thead>
+                  <tr>
+                    <th>Vendor</th>
+                    <th>Address</th>
+                    <th>Email</th>
+                    <th className="checks-amount">Spend (12 mo)</th>
+                    <th>Last paid</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {readiness.incomplete.map((r) => (
+                    <tr key={r.vendor.id}>
+                      <td>{vendorLink(r)}</td>
+                      <td>{mark(r.vendor.hasAddress)}</td>
+                      <td>{mark(r.vendor.hasEmail)}</td>
+                      <td className="checks-amount num">{formatCurrencyExact(r.spend)}</td>
+                      <td>{usDate(r.lastPaid)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="var-caption" style={{ padding: '0 18px 14px' }}>
+              These vendors are marked for 1099 tracking but are missing the address or email needed to file
+              or request a W-9. QuickBooks does not expose Tax IDs to the API — verify those on the vendor
+              page (click through).
+            </p>
+          </>
+        )}
+      </div>
+
+      <div className="panel check-vendor-section">
+        <div className="panel-head">
+          <h3>Paid vendors not tracked for 1099</h3>
+        </div>
+        {readiness.untracked.length === 0 ? (
+          <div className="panel-body">
+            <p className="sync-empty">
+              Every vendor paid in the year ending {monthLabel} is 1099-tracked.
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="table-scroll">
+              <table className="metrics checks">
+                <thead>
+                  <tr>
+                    <th>Vendor</th>
+                    <th className="checks-amount">Spend (12 mo)</th>
+                    <th>Last paid</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {readiness.untracked.map((r) => (
+                    <tr key={r.vendor.id}>
+                      <td>{vendorLink(r)}</td>
+                      <td className="checks-amount num">{formatCurrencyExact(r.spend)}</td>
+                      <td>{usDate(r.lastPaid)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="var-caption" style={{ padding: '0 18px 14px' }}>
+              The annual W-9 sweep list: vendors with spend in the year ending {monthLabel} whose profile has
+              &ldquo;Track payments for 1099&rdquo; off. Corporations and card-paid vendors are legitimately
+              untracked — the API cannot see entity type, so dismiss those by eye. Only the incomplete-profile
+              list above counts toward this check&rsquo;s badge.
+            </p>
+          </>
+        )}
+      </div>
     </>
   );
 }

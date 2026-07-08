@@ -260,6 +260,7 @@ export function Dashboard({ dataset, onMapChange, syncTab, side, tab, slug, chec
                 qboEnvironment={dataset.qboEnvironment}
                 realmId={realmId}
                 companyName={dataset.companyName}
+                vendors={dataset.vendors}
               />
             </div>
           )}

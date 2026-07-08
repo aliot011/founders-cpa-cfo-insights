@@ -91,12 +91,24 @@ export interface ClientSummary {
   closedThrough: string | null;
 }
 
+/** A vendor's 1099/W-9-relevant profile fields (all the API exposes). */
+export interface VendorProfile {
+  id: string;
+  name: string;
+  /** QBO's "Track payments for 1099" checkbox. */
+  tracked1099: boolean;
+  hasAddress: boolean;
+  hasEmail: boolean;
+}
+
 /** A client's synced dataset, as served by the API. */
 export interface ClientDataset {
   entries: LedgerEntry[];
   accountMap: AccountMap;
   /** Per-account balance as of startDate (natural sign), from QBO Beginning Balance rows. */
   openingBalances: Record<string, number>;
+  /** Active vendor profiles (1099/W-9 fields) as of the last sync. */
+  vendors: VendorProfile[];
   startDate: string;
   endDate: string;
   /** Non-fatal notes from the last sync (new accounts, skipped rows, etc.). */
