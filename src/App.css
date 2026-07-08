@@ -1066,3 +1066,14 @@ details.collapse > summary {
 details.collapse > summary::-webkit-details-marker {
   display: none;
 }
+
+/* Page header with right-aligned actions (e.g. Sync now on Checks). */
+.page-head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.page-head-actions {
+  flex-shrink: 0;
+}

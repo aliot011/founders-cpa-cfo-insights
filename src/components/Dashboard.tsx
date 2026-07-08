@@ -1,4 +1,5 @@
 import { useMemo, useState, type ReactNode } from 'react';
+import { api } from '../lib/api';
 import { useNavigate } from 'react-router-dom';
 import type { AccountMap, ClientDataset } from '../types';
 import { computeMetrics } from '../lib/metrics';
@@ -66,6 +67,21 @@ export function PortalSeg({ side, slug }: { side: Side; slug: string | null }) {
 export function Dashboard({ dataset, onMapChange, syncTab, side, tab, slug, check, realmId, onDataChanged, closedThrough }: Props) {
   const navigate = useNavigate();
   const [kpiMonth, setKpiMonth] = useState<string | null>(null); // null = latest
+  const [syncing, setSyncing] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
+
+  async function handleSyncNow() {
+    setSyncing(true);
+    setSyncError(null);
+    try {
+      await api.sync(realmId);
+      await onDataChanged();
+    } catch (err) {
+      setSyncError(err instanceof Error ? err.message : 'Sync failed.');
+    } finally {
+      setSyncing(false);
+    }
+  }
 
   // Reporting tabs stop at the most recent closed month; Checks and Accounts
   // always see the full synced ledger.
@@ -219,7 +235,13 @@ export function Dashboard({ dataset, onMapChange, syncTab, side, tab, slug, chec
           <PageHeader
             title="Checks"
             subtitle="Data-quality checks over the synced ledger, so bookkeeping gaps get caught and fixed in QuickBooks before they distort the reports."
+            actions={
+              <button className="btn btn-primary" onClick={handleSyncNow} disabled={syncing}>
+                {syncing ? 'Syncing…' : 'Sync now'}
+              </button>
+            }
           />
+          {syncError && <div className="upload-error sync-error">{syncError}</div>}
           {!hasData && emptyCallout}
           {hasData && check && (
             <div className="section">
@@ -232,7 +254,6 @@ export function Dashboard({ dataset, onMapChange, syncTab, side, tab, slug, chec
                 qboEnvironment={dataset.qboEnvironment}
                 realmId={realmId}
                 companyName={dataset.companyName}
-                onDataChanged={onDataChanged}
               />
             </div>
           )}
@@ -272,10 +293,13 @@ export function Dashboard({ dataset, onMapChange, syncTab, side, tab, slug, chec
   );
 }
 
-export function PageHeader({ title, subtitle }: { title: string; subtitle: string }) {
+export function PageHeader({ title, subtitle, actions }: { title: string; subtitle: string; actions?: ReactNode }) {
   return (
     <header className="page-head">
-      <h1>{title}</h1>
+      <div className="page-head-row">
+        <h1>{title}</h1>
+        {actions && <div className="page-head-actions">{actions}</div>}
+      </div>
       <p>{subtitle}</p>
     </header>
   );

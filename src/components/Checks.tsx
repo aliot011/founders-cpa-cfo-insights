@@ -1,8 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import type { AccountMap, Category, LedgerEntry } from '../types';
 import { formatCurrency, formatCurrencyExact, formatMonth, formatMonthShort } from '../lib/format';
-import { api } from '../lib/api';
 import { findMissingRecurringVendors, type RecurringMiss } from '../lib/recurring';
 import { findMultiAccountVendors, type MultiAccountVendor } from '../lib/multiAccount';
 import { qboSwitchUrl, qboTxnUrls } from '../lib/qbo';
@@ -22,8 +21,6 @@ interface Props {
   qboEnvironment: QboEnv;
   realmId: string;
   companyName: string;
-  /** Re-fetches the dataset after a sync kicked off from this page. */
-  onDataChanged: () => void | Promise<void>;
 }
 
 /** Accounts whose lines count as expense activity for the checks. */
@@ -100,23 +97,7 @@ function TxnDate({ env, realmId, date, txn, companyName }: { env: QboEnv; realmI
   );
 }
 
-export function Checks({ entries, accountMap, slug, check, closedThrough, qboEnvironment, realmId, companyName, onDataChanged }: Props) {
-  const [syncing, setSyncing] = useState(false);
-  const [syncError, setSyncError] = useState<string | null>(null);
-
-  async function handleSync() {
-    setSyncing(true);
-    setSyncError(null);
-    try {
-      await api.sync(realmId);
-      await onDataChanged();
-    } catch (err) {
-      setSyncError(err instanceof Error ? err.message : 'Sync failed.');
-    } finally {
-      setSyncing(false);
-    }
-  }
-
+export function Checks({ entries, accountMap, slug, check, closedThrough, qboEnvironment, realmId, companyName }: Props) {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -204,14 +185,9 @@ export function Checks({ entries, accountMap, slug, check, closedThrough, qboEnv
                 <option key={m} value={m}>{formatMonth(m)}</option>
               ))}
             </select>
-            <button className="btn btn-primary btn-xs" onClick={handleSync} disabled={syncing}>
-              {syncing ? 'Syncing…' : 'Sync now'}
-            </button>
           </div>
         </div>
       </nav>
-
-      {syncError && <div className="upload-error sync-error">{syncError}</div>}
 
       {check === 'missing-vendor' && (
         <TransactionPanel
