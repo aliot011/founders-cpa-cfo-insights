@@ -896,6 +896,16 @@ table.checks td.checks-memo {
 .check-vendor-section {
   margin-bottom: 14px;
 }
+/* Date links into QuickBooks. */
+.txn-link {
+  color: var(--accent-dark);
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.txn-link:hover {
+  text-decoration: underline;
+}
 
 /* ---- Vendor spend ------------------------------------------------------ */
 /* Panels hosting a dropdown must not clip it; the table keeps its own

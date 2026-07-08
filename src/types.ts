@@ -52,6 +52,8 @@ export interface LedgerEntry {
   customer?: string;
   memo?: string;
   transactionType?: string;
+  /** QBO transaction id — enables deep links into QuickBooks. */
+  txnId?: string;
 }
 
 /** account name -> category. User-editable, persisted. */
@@ -101,6 +103,8 @@ export interface ClientDataset {
   notes: string[];
   lastSyncedAt: string;
   companyName: string;
+  /** Which QBO host transaction deep links should point at. */
+  qboEnvironment: 'sandbox' | 'production';
 }
 
 /** Result of a completed sync. */

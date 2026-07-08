@@ -11,6 +11,7 @@ import {
   setClosedThrough,
   setSyncStartDate,
 } from '../db.ts';
+import { env } from '../env.ts';
 import { ApiError } from '../errors.ts';
 import { revoke } from '../qbo/oauth.ts';
 import { runSync } from '../sync.ts';
@@ -68,6 +69,7 @@ clientsRouter.get('/:realmId/dataset', (req, res) => {
     notes: JSON.parse(ds.notes_json),
     lastSyncedAt: ds.last_synced_at,
     companyName: conn.company_name,
+    qboEnvironment: env.QBO_ENVIRONMENT,
   });
 });
 

@@ -32,6 +32,7 @@ test('transformReport flattens data rows across nested sections', () => {
     customer: undefined,
     memo: undefined,
     transactionType: 'Cash Expense',
+    txnId: '135', // from the txn_type cell's metadata — powers QBO deep links
   });
 
   // Beginning Balance rows become opening balances keyed by their section.

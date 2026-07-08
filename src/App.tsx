@@ -29,6 +29,7 @@ const EMPTY_DATASET: Omit<ClientDataset, 'companyName'> = {
   entries: [],
   accountMap: {},
   openingBalances: {},
+  qboEnvironment: 'production',
   startDate: '',
   endDate: '',
   notes: [],

@@ -28,6 +28,9 @@ export interface RecurringMiss {
   accounts: string[];
   /** Date of the vendor's most recent transaction anywhere in the ledger. */
   lastSeen: string;
+  /** That transaction's QBO id/type, for deep-linking. */
+  lastSeenTxnId?: string;
+  lastSeenType?: string;
 }
 
 /**
@@ -49,7 +52,10 @@ export function findMissingRecurringVendors(
     amount: number;
     txns: number;
   }
-  const byVendor = new Map<string, { months: Map<string, VendorMonth>; accounts: Set<string>; lastSeen: string }>();
+  const byVendor = new Map<
+    string,
+    { months: Map<string, VendorMonth>; accounts: Set<string>; lastSeenEntry: LedgerEntry }
+  >();
 
   for (const e of entries) {
     const cat = accountMap[e.account] ?? 'ignore';
@@ -59,7 +65,7 @@ export function findMissingRecurringVendors(
 
     let v = byVendor.get(vendor);
     if (!v) {
-      v = { months: new Map(), accounts: new Set(), lastSeen: e.date };
+      v = { months: new Map(), accounts: new Set(), lastSeenEntry: e };
       byVendor.set(vendor, v);
     }
     const m = v.months.get(e.month) ?? { amount: 0, txns: 0 };
@@ -67,7 +73,7 @@ export function findMissingRecurringVendors(
     m.txns += 1;
     v.months.set(e.month, m);
     v.accounts.add(e.account);
-    if (e.date > v.lastSeen) v.lastSeen = e.date;
+    if (e.date > v.lastSeenEntry.date) v.lastSeenEntry = e;
   }
 
   const misses: RecurringMiss[] = [];
@@ -98,7 +104,9 @@ export function findMissingRecurringVendors(
       maxAmount: Math.max(...amounts),
       avgTxns: streakMonths.reduce((t, m) => t + m.txns, 0) / streakMonths.length,
       accounts: [...v.accounts].sort((a, b) => a.localeCompare(b)),
-      lastSeen: v.lastSeen,
+      lastSeen: v.lastSeenEntry.date,
+      lastSeenTxnId: v.lastSeenEntry.txnId,
+      lastSeenType: v.lastSeenEntry.transactionType,
     });
   }
 

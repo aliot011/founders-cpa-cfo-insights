@@ -226,6 +226,7 @@ export function Dashboard({ dataset, onMapChange, syncTab, side, tab, slug, chec
                 slug={slug}
                 check={check}
                 closedThrough={closedThrough}
+                qboEnvironment={dataset.qboEnvironment}
               />
             </div>
           )}

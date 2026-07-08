@@ -4,7 +4,10 @@ import type { AccountMap, Category, LedgerEntry } from '../types';
 import { formatCurrency, formatCurrencyExact, formatMonth, formatMonthShort } from '../lib/format';
 import { findMissingRecurringVendors, type RecurringMiss } from '../lib/recurring';
 import { findMultiAccountVendors, type MultiAccountVendor } from '../lib/multiAccount';
+import { qboTxnUrl } from '../lib/qbo';
 import { checkSegment, companyPath, type CheckId } from '../lib/routes';
+
+type QboEnv = 'sandbox' | 'production';
 
 interface Props {
   entries: LedgerEntry[];
@@ -14,6 +17,8 @@ interface Props {
   check: CheckId;
   /** Most recent closed month — the default review month. */
   closedThrough?: string | null;
+  /** Which QBO host transaction deep links point at. */
+  qboEnvironment: QboEnv;
 }
 
 /** Accounts whose lines count as expense activity for the checks. */
@@ -49,7 +54,18 @@ function usDate(iso: string): string {
 const byDateDesc = (a: LedgerEntry, b: LedgerEntry) =>
   b.date.localeCompare(a.date) || a.account.localeCompare(b.account);
 
-export function Checks({ entries, accountMap, slug, check, closedThrough }: Props) {
+/** A date that deep-links to the transaction in QuickBooks when possible. */
+function TxnDate({ env, date, txn }: { env: QboEnv; date: string; txn: Pick<LedgerEntry, 'transactionType' | 'txnId'> }) {
+  const url = qboTxnUrl(env, txn);
+  if (!url) return <>{usDate(date)}</>;
+  return (
+    <a className="txn-link" href={url} target="_blank" rel="noopener" title="Open in QuickBooks">
+      {usDate(date)} ↗
+    </a>
+  );
+}
+
+export function Checks({ entries, accountMap, slug, check, closedThrough, qboEnvironment }: Props) {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -137,6 +153,7 @@ export function Checks({ entries, accountMap, slug, check, closedThrough }: Prop
           title={`Expense transactions without a vendor in ${monthLabel}`}
           otherKind="Expense"
           flagged={flagged['missing-vendor']}
+          env={qboEnvironment}
           emptyText={`Every ${monthLabel} expense line carries a vendor (or payee) name — nothing to fix. This check covers accounts categorized as COGS, Operating Expenses, or Other Expense, including journal entries.${maybeOpen}`}
           caption={`These ${monthLabel} lines hit expense accounts but name no vendor, so they are invisible to vendor reporting (including the Vendor Spend tab and the Missing recurring check). Journal entries are the usual culprit. Fix by opening the transaction in QuickBooks, setting its Vendor/Name, then re-syncing.${maybeOpen}`}
         />
@@ -147,13 +164,14 @@ export function Checks({ entries, accountMap, slug, check, closedThrough }: Prop
           title={`Revenue transactions without a customer in ${monthLabel}`}
           otherKind="Sale"
           flagged={flagged['missing-customer']}
+          env={qboEnvironment}
           emptyText={`Every ${monthLabel} revenue line carries a customer (or payee) name — nothing to fix. This check covers accounts categorized as Revenue, including journal entries.${maybeOpen}`}
           caption={`These ${monthLabel} lines hit revenue accounts but name no customer, so customer-level revenue reporting cannot see them. Journal entries and bare deposits are the usual culprits. Fix by opening the transaction in QuickBooks, setting its Customer/Name, then re-syncing.${maybeOpen}`}
         />
       )}
 
       {check === 'missing-recurring' && (
-        <RecurringPanel misses={flagged['missing-recurring']} monthLabel={monthLabel} maybeOpen={maybeOpen} />
+        <RecurringPanel misses={flagged['missing-recurring']} monthLabel={monthLabel} maybeOpen={maybeOpen} env={qboEnvironment} />
       )}
 
       {check === 'multi-account' && (
@@ -165,6 +183,7 @@ export function Checks({ entries, accountMap, slug, check, closedThrough }: Prop
           title={`Expenses posted to parent accounts in ${monthLabel}`}
           otherKind="Expense"
           flagged={flagged['parent-account']}
+          env={qboEnvironment}
           showPayee
           emptyText={`No ${monthLabel} expenses are posted directly to an account that has sub-accounts — everything is coded down to a leaf account.${maybeOpen}`}
           caption={`These ${monthLabel} lines are coded to a parent account even though it has sub-accounts, so reports show them as the parent's "Other" bucket instead of rolling up cleanly. Recode each to the most specific sub-account in QuickBooks, then re-sync.${maybeOpen}`}
@@ -182,11 +201,12 @@ interface TransactionPanelProps {
   flagged: LedgerEntry[];
   emptyText: string;
   caption: string;
+  env: QboEnv;
   /** Show the payee column (omitted on the missing-payee checks, where it is empty by definition). */
   showPayee?: boolean;
 }
 
-function TransactionPanel({ title, otherKind, flagged, emptyText, caption, showPayee }: TransactionPanelProps) {
+function TransactionPanel({ title, otherKind, flagged, emptyText, caption, showPayee, env }: TransactionPanelProps) {
   return (
     <div className="panel">
       <div className="panel-head">
@@ -215,7 +235,7 @@ function TransactionPanel({ title, otherKind, flagged, emptyText, caption, showP
               <tbody>
                 {flagged.map((e, i) => (
                   <tr key={i}>
-                    <td>{usDate(e.date)}</td>
+                    <td><TxnDate env={env} date={e.date} txn={e} /></td>
                     <td>{isJournalEntry(e) ? 'JE' : otherKind}</td>
                     <td>{e.transactionType || '—'}</td>
                     {showPayee && <td>{e.vendor || e.name || e.customer || '—'}</td>}
@@ -236,7 +256,7 @@ function TransactionPanel({ title, otherKind, flagged, emptyText, caption, showP
 
 // ---- Missing recurring vendors ------------------------------------------
 
-function RecurringPanel({ misses, monthLabel, maybeOpen }: { misses: RecurringMiss[]; monthLabel: string; maybeOpen: string }) {
+function RecurringPanel({ misses, monthLabel, maybeOpen, env }: { misses: RecurringMiss[]; monthLabel: string; maybeOpen: string; env: QboEnv }) {
   const typical = (m: RecurringMiss) =>
     m.steady
       ? `~${formatCurrencyExact(m.avgAmount)}/mo`
@@ -277,7 +297,7 @@ function RecurringPanel({ misses, monthLabel, maybeOpen }: { misses: RecurringMi
                     <td>{typical(m)}</td>
                     <td>{Math.round(m.avgTxns * 10) / 10}</td>
                     <td className="checks-memo">{m.accounts.join(', ')}</td>
-                    <td>{usDate(m.lastSeen)}</td>
+                    <td><TxnDate env={env} date={m.lastSeen} txn={{ transactionType: m.lastSeenType, txnId: m.lastSeenTxnId }} /></td>
                   </tr>
                 ))}
               </tbody>

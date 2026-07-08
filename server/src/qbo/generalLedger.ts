@@ -123,6 +123,8 @@ export function transformReport(report: GeneralLedgerReport): TransformResult {
           customer: cell(row, cols.customer) || undefined,
           memo: cell(row, cols.memo) || undefined,
           transactionType: cell(row, cols.txnType) || undefined,
+          // The txn_type cell carries the QBO transaction id in its metadata.
+          txnId: (cols.txnType >= 0 && row.ColData[cols.txnType]?.id) || undefined,
         });
         continue;
       }
