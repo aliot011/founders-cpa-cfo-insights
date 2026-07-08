@@ -52,7 +52,7 @@ export interface LedgerEntry {
   customer?: string;
   memo?: string;
   transactionType?: string;
-  /** QBO transaction id — enables deep links into QuickBooks. */
+  /** QBO transaction id, enabling deep links into QuickBooks. */
   txnId?: string;
 }
 
@@ -97,6 +97,8 @@ export interface VendorProfile {
   name: string;
   /** QBO's "Track payments for 1099" checkbox. */
   tracked1099: boolean;
+  /** A Tax ID is saved (the API returns it masked, so only presence is known). */
+  hasTaxId: boolean;
   hasAddress: boolean;
   hasEmail: boolean;
 }

@@ -10,23 +10,25 @@ function entry(month: string, vendor: string, amount: number, account = 'Contrac
 }
 
 function vendor(name: string, over: Partial<VendorProfile> = {}): VendorProfile {
-  return { id: name, name, tracked1099: false, hasAddress: true, hasEmail: true, ...over };
+  return { id: name, name, tracked1099: false, hasTaxId: true, hasAddress: true, hasEmail: true, ...over };
 }
 
 test('splits active vendors into incomplete-tracked and untracked', () => {
   const entries = [
     entry('2026-01', 'Tracked Missing Email', 900),
+    entry('2026-01', 'Tracked No TaxId', 700),
     entry('2026-01', 'Tracked Complete', 500),
     entry('2026-01', 'Untracked Corp', 2000),
   ];
   const vendors = [
     vendor('Tracked Missing Email', { tracked1099: true, hasEmail: false }),
+    vendor('Tracked No TaxId', { tracked1099: true, hasTaxId: false }),
     vendor('Tracked Complete', { tracked1099: true }),
     vendor('Untracked Corp'),
   ];
   const r = build1099Readiness(entries, MAP, vendors, '2026-01');
 
-  assert.deepEqual(r.incomplete.map((x) => x.vendor.name), ['Tracked Missing Email']);
+  assert.deepEqual(r.incomplete.map((x) => x.vendor.name), ['Tracked Missing Email', 'Tracked No TaxId']);
   assert.deepEqual(r.untracked.map((x) => x.vendor.name), ['Untracked Corp']);
   assert.equal(r.incomplete[0].spend, 900);
   assert.equal(r.incomplete[0].lastPaid, '2026-01-10');

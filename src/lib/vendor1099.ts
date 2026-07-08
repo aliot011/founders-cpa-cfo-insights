@@ -17,17 +17,17 @@ export interface Vendor1099Row {
 }
 
 export interface Vendor1099Report {
-  /** 1099-tracked vendors whose profile is missing the address or email needed to file / chase a W-9. */
+  /** 1099-tracked vendors missing the tax ID, address, or email needed to file / chase a W-9. */
   incomplete: Vendor1099Row[];
   /** Vendors with spend in the window that aren't 1099-tracked at all (corps are legitimately here). */
   untracked: Vendor1099Row[];
 }
 
 /**
- * 1099/W-9 readiness over the vendors that actually matter — those with
- * expense activity in the trailing year through the review month. QBO's API
- * never returns TaxIdentifier, so tax-ID presence must be confirmed on the
- * vendor page itself; this covers everything else the API exposes.
+ * 1099/W-9 readiness over the vendors that actually matter: those with
+ * expense activity in the trailing year through the review month. The API
+ * reports tax-ID presence (masked), the 1099-tracking flag, and contact
+ * fields, which is everything a W-9 chase needs.
  */
 export function build1099Readiness(
   entries: LedgerEntry[],
@@ -55,9 +55,9 @@ export function build1099Readiness(
   const untracked: Vendor1099Row[] = [];
   for (const vendor of vendors) {
     const a = activity.get(vendor.name);
-    if (!a) continue; // no spend in the window — not this year's problem
+    if (!a) continue; // no spend in the window; not this year's problem
     const row = { vendor, spend: a.spend, lastPaid: a.lastPaid };
-    if (vendor.tracked1099 && (!vendor.hasAddress || !vendor.hasEmail)) incomplete.push(row);
+    if (vendor.tracked1099 && (!vendor.hasTaxId || !vendor.hasAddress || !vendor.hasEmail)) incomplete.push(row);
     else if (!vendor.tracked1099) untracked.push(row);
   }
 

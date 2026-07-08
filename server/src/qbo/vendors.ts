@@ -5,6 +5,7 @@ interface QboVendor {
   Id: string;
   DisplayName: string;
   Vendor1099?: boolean;
+  TaxIdentifier?: string;
   BillAddr?: { Line1?: string; City?: string; PostalCode?: string };
   PrimaryEmailAddr?: { Address?: string };
   Active?: boolean;
@@ -17,9 +18,10 @@ interface VendorQueryResponse {
 const PAGE_SIZE = 1000;
 
 /**
- * Active vendor profiles, reduced to the 1099/W-9-relevant fields the API
- * exposes. TaxIdentifier is write-only in the Accounting API (verified: never
- * returned on reads), so tax-ID presence cannot be checked here.
+ * Active vendor profiles, reduced to the 1099/W-9-relevant fields. The API
+ * returns TaxIdentifier masked (e.g. "XXXXX6789") once one is saved and omits
+ * the field entirely when none is, so presence is detectable but the value is
+ * not (verified live against the sandbox).
  */
 export async function fetchVendorProfiles(realmId: string): Promise<VendorProfile[]> {
   const vendors: QboVendor[] = [];
@@ -35,6 +37,7 @@ export async function fetchVendorProfiles(realmId: string): Promise<VendorProfil
     id: v.Id,
     name: v.DisplayName,
     tracked1099: v.Vendor1099 === true,
+    hasTaxId: Boolean(v.TaxIdentifier),
     hasAddress: Boolean(v.BillAddr && (v.BillAddr.Line1 || v.BillAddr.City)),
     hasEmail: Boolean(v.PrimaryEmailAddr?.Address),
   }));

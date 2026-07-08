@@ -16,7 +16,7 @@ interface Props {
   /** Company slug + active check, both from the URL. */
   slug: string;
   check: CheckId;
-  /** Most recent closed month — the default review month. */
+  /** Most recent closed month, the default review month. */
   closedThrough?: string | null;
   /** Which QBO host transaction deep links point at. */
   qboEnvironment: QboEnv;
@@ -186,7 +186,7 @@ export function Checks({ entries, accountMap, slug, check, closedThrough, qboEnv
           env={qboEnvironment}
           realmId={realmId}
           companyName={companyName}
-          emptyText={`Every ${monthLabel} expense line carries a vendor (or payee) name — nothing to fix. This check covers accounts categorized as COGS, Operating Expenses, or Other Expense, including journal entries.${maybeOpen}`}
+          emptyText={`Every ${monthLabel} expense line carries a vendor (or payee) name, so there is nothing to fix. This check covers accounts categorized as COGS, Operating Expenses, or Other Expense, including journal entries.${maybeOpen}`}
           caption={`These ${monthLabel} lines hit expense accounts but name no vendor, so they are invisible to vendor reporting (including the Vendor Spend tab and the Missing recurring check). Journal entries are the usual culprit. Fix by opening the transaction in QuickBooks, setting its Vendor/Name, then re-syncing.${maybeOpen}`}
         />
       )}
@@ -199,7 +199,7 @@ export function Checks({ entries, accountMap, slug, check, closedThrough, qboEnv
           env={qboEnvironment}
           realmId={realmId}
           companyName={companyName}
-          emptyText={`Every ${monthLabel} revenue line carries a customer (or payee) name — nothing to fix. This check covers accounts categorized as Revenue, including journal entries.${maybeOpen}`}
+          emptyText={`Every ${monthLabel} revenue line carries a customer (or payee) name, so there is nothing to fix. This check covers accounts categorized as Revenue, including journal entries.${maybeOpen}`}
           caption={`These ${monthLabel} lines hit revenue accounts but name no customer, so customer-level revenue reporting cannot see them. Journal entries and bare deposits are the usual culprits. Fix by opening the transaction in QuickBooks, setting its Customer/Name, then re-syncing.${maybeOpen}`}
         />
       )}
@@ -231,7 +231,7 @@ export function Checks({ entries, accountMap, slug, check, closedThrough, qboEnv
           realmId={realmId}
           companyName={companyName}
           showPayee
-          emptyText={`No ${monthLabel} expenses are posted directly to an account that has sub-accounts — everything is coded down to a leaf account.${maybeOpen}`}
+          emptyText={`No ${monthLabel} expenses are posted directly to an account that has sub-accounts; everything is coded down to a leaf account.${maybeOpen}`}
           caption={`These ${monthLabel} lines are coded to a parent account even though it has sub-accounts, so reports show them as the parent's "Other" bucket instead of rolling up cleanly. Recode each to the most specific sub-account in QuickBooks, then re-sync.${maybeOpen}`}
         />
       )}
@@ -285,8 +285,8 @@ function TransactionPanel({ title, otherKind, flagged, emptyText, caption, showP
                   <tr key={i}>
                     <td><TxnDate env={env} realmId={realmId} date={e.date} txn={e} companyName={companyName} /></td>
                     <td>{isJournalEntry(e) ? 'JE' : otherKind}</td>
-                    <td>{e.transactionType || '—'}</td>
-                    {showPayee && <td>{e.vendor || e.name || e.customer || '—'}</td>}
+                    <td>{e.transactionType || '–'}</td>
+                    {showPayee && <td>{e.vendor || e.name || e.customer || '–'}</td>}
                     <td>{e.account}</td>
                     <td className="checks-memo">{e.memo || ''}</td>
                     <td className="checks-amount num">{formatCurrencyExact(e.amount)}</td>
@@ -319,7 +319,7 @@ function RecurringPanel({ misses, monthLabel, maybeOpen, env, realmId, companyNa
       {misses.length === 0 ? (
         <div className="panel-body">
           <p className="sync-empty">
-            Every vendor with a monthly spend streak shows activity in {monthLabel} — nothing looks
+            Every vendor with a monthly spend streak shows activity in {monthLabel}, so nothing looks
             forgotten. A vendor qualifies after appearing at least three months in a row.{maybeOpen}
           </p>
         </div>
@@ -352,7 +352,7 @@ function RecurringPanel({ misses, monthLabel, maybeOpen, env, realmId, companyNa
             </table>
           </div>
           <p className="var-caption" style={{ padding: '0 18px 14px' }}>
-            These vendors posted expense activity every month right up to {monthLabel}, then went quiet —
+            These vendors posted expense activity every month right up to {monthLabel}, then went quiet:
             the classic sign of a monthly bill or journal entry that never got recorded. Steady-dollar
             vendors are listed first (highest confidence). If the vendor is genuinely done, no action is
             needed; the flag clears once the streak ages out.{maybeOpen}
@@ -374,8 +374,8 @@ function MultiAccountPanel({ vendors, monthLabel }: { vendors: MultiAccountVendo
         </div>
         <div className="panel-body">
           <p className="sync-empty">
-            Every vendor's spend stayed in a single expense account over the six months ending {monthLabel} —
-            coding looks consistent.
+            Every vendor's spend stayed in a single expense account over the six months ending {monthLabel},
+            so coding looks consistent.
           </p>
         </div>
       </div>
@@ -386,7 +386,7 @@ function MultiAccountPanel({ vendors, monthLabel }: { vendors: MultiAccountVendo
     <>
       <p className="var-caption" style={{ margin: '0 2px 14px' }}>
         Each section is a vendor whose spend hit more than one expense account in the six months ending{' '}
-        {monthLabel} — worth a scan for inconsistent coding. Some vendors legitimately span accounts; the
+        {monthLabel}; scan them for inconsistent coding. Some vendors legitimately span accounts; the
         ones to fix are those bouncing between similar accounts month to month.
       </p>
       {vendors.map((v) => (
@@ -449,7 +449,7 @@ function Vendor1099Panel({ readiness, monthLabel, env, realmId, companyName }: V
       {row.vendor.name}
     </QboLink>
   );
-  const mark = (ok: boolean) => (ok ? '✓' : '—');
+  const mark = (ok: boolean) => (ok ? '✓' : '–');
 
   return (
     <>
@@ -460,9 +460,8 @@ function Vendor1099Panel({ readiness, monthLabel, env, realmId, companyName }: V
         {readiness.incomplete.length === 0 ? (
           <div className="panel-body">
             <p className="sync-empty">
-              Every 1099-tracked vendor with spend in the year ending {monthLabel} has an address and email
-              on file. QuickBooks does not expose Tax IDs to the API, so confirm W-9s/Tax IDs on the vendor
-              pages themselves.
+              Every 1099-tracked vendor with spend in the year ending {monthLabel} has a tax ID, address,
+              and email on file.
             </p>
           </div>
         ) : (
@@ -472,6 +471,7 @@ function Vendor1099Panel({ readiness, monthLabel, env, realmId, companyName }: V
                 <thead>
                   <tr>
                     <th>Vendor</th>
+                    <th>Tax ID</th>
                     <th>Address</th>
                     <th>Email</th>
                     <th className="checks-amount">Spend (12 mo)</th>
@@ -482,6 +482,7 @@ function Vendor1099Panel({ readiness, monthLabel, env, realmId, companyName }: V
                   {readiness.incomplete.map((r) => (
                     <tr key={r.vendor.id}>
                       <td>{vendorLink(r)}</td>
+                      <td>{mark(r.vendor.hasTaxId)}</td>
                       <td>{mark(r.vendor.hasAddress)}</td>
                       <td>{mark(r.vendor.hasEmail)}</td>
                       <td className="checks-amount num">{formatCurrencyExact(r.spend)}</td>
@@ -492,9 +493,9 @@ function Vendor1099Panel({ readiness, monthLabel, env, realmId, companyName }: V
               </table>
             </div>
             <p className="var-caption" style={{ padding: '0 18px 14px' }}>
-              These vendors are marked for 1099 tracking but are missing the address or email needed to file
-              or request a W-9. QuickBooks does not expose Tax IDs to the API — verify those on the vendor
-              page (click through).
+              These vendors are marked for 1099 tracking but are missing the tax ID, address, or email
+              needed to file or request a W-9. Click a vendor to fix its profile in QuickBooks; the tax ID
+              itself is only ever shown masked, so presence is all the app can see.
             </p>
           </>
         )}
@@ -535,7 +536,7 @@ function Vendor1099Panel({ readiness, monthLabel, env, realmId, companyName }: V
             <p className="var-caption" style={{ padding: '0 18px 14px' }}>
               The annual W-9 sweep list: vendors with spend in the year ending {monthLabel} whose profile has
               &ldquo;Track payments for 1099&rdquo; off. Corporations and card-paid vendors are legitimately
-              untracked — the API cannot see entity type, so dismiss those by eye. Only the incomplete-profile
+              untracked; the API cannot see entity type, so dismiss those by eye. Only the incomplete-profile
               list above counts toward this check&rsquo;s badge.
             </p>
           </>
