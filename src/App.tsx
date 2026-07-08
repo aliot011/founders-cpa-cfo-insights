@@ -9,7 +9,6 @@ import {
   checkForSegment,
   companyPath,
   companySlug,
-  DEFAULT_CHECK_SEGMENT,
   DEFAULT_SEGMENT,
   findCompany,
   TAB_SEGMENTS,
@@ -280,9 +279,9 @@ function CompanyRoute({ side, clients, refreshClients }: RouteProps & { side: 'c
 
   if (!client || !slug) return <Navigate to="/" replace />;
   if (!tab) return <Navigate to={companyPath(side, slug, DEFAULT_SEGMENT[side])} replace />;
-  // Checks has sub-routes (/checks/:check); every other tab has none.
-  if (tab === 'checks' && !check) {
-    return <Navigate to={`${companyPath(side, slug, 'checks')}/${DEFAULT_CHECK_SEGMENT}`} replace />;
+  // Checks has sub-routes (/checks/:check, bare /checks is the menu); other tabs have none.
+  if (tab === 'checks' && params.sub && !check) {
+    return <Navigate to={companyPath(side, slug, 'checks')} replace />;
   }
   if (tab !== 'checks' && params.sub) return <Navigate to={companyPath(side, slug, params.tab)} replace />;
   // A company with no data yet only has the advisor's Sync tab to offer.

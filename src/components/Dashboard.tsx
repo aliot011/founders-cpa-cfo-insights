@@ -1,6 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { api } from '../lib/api';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import type { AccountMap, ClientDataset } from '../types';
 import { computeMetrics } from '../lib/metrics';
 import { formatMonth } from '../lib/format';
@@ -11,7 +11,7 @@ import { Charts } from './Charts';
 import { AccountMapping } from './AccountMapping';
 import { VarianceAnalysis } from './VarianceAnalysis';
 import { VendorSpend } from './VendorSpend';
-import { Checks } from './Checks';
+import { CHECK_META, Checks } from './Checks';
 
 interface Props {
   dataset: ClientDataset;
@@ -66,6 +66,7 @@ export function PortalSeg({ side, slug }: { side: Side; slug: string | null }) {
 
 export function Dashboard({ dataset, onMapChange, syncTab, side, tab, slug, check, realmId, onDataChanged, closedThrough }: Props) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [kpiMonth, setKpiMonth] = useState<string | null>(null); // null = latest
   const [syncing, setSyncing] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
@@ -230,42 +231,59 @@ export function Dashboard({ dataset, onMapChange, syncTab, side, tab, slug, chec
         </>
       )}
 
-      {tab === 'checks' && (
-        <>
-          <PageHeader
-            title="Checks"
-            subtitle="Data-quality checks over the synced ledger, so bookkeeping gaps get caught and fixed in QuickBooks before they distort the reports."
-            actions={
-              <>
-                <button className="btn btn-primary" onClick={handleSyncNow} disabled={syncing}>
-                  {syncing ? 'Syncing…' : 'Re-Sync QuickBooks'}
-                </button>
-                <span className="page-head-sub">
-                  Last sync:{' '}
-                  {dataset.lastSyncedAt ? new Date(dataset.lastSyncedAt).toLocaleString() : 'never'}
-                </span>
-              </>
-            }
-          />
-          {syncError && <div className="upload-error sync-error">{syncError}</div>}
-          {!hasData && emptyCallout}
-          {hasData && check && (
-            <div className="section">
-              <Checks
-                entries={dataset.entries}
-                accountMap={dataset.accountMap}
-                slug={slug}
-                check={check}
-                closedThrough={closedThrough}
-                qboEnvironment={dataset.qboEnvironment}
-                realmId={realmId}
-                companyName={dataset.companyName}
-                vendors={dataset.vendors}
-              />
-            </div>
-          )}
-        </>
-      )}
+      {tab === 'checks' && (() => {
+        const meta = check ? CHECK_META.find((c) => c.id === check) : undefined;
+        const resync = (
+          <>
+            <button className="btn btn-primary" onClick={handleSyncNow} disabled={syncing}>
+              {syncing ? 'Syncing…' : 'Re-Sync QuickBooks'}
+            </button>
+            <span className="page-head-sub">
+              Last sync: {dataset.lastSyncedAt ? new Date(dataset.lastSyncedAt).toLocaleString() : 'never'}
+            </span>
+          </>
+        );
+        return (
+          <>
+            {meta && (
+              <button
+                className="back-link"
+                onClick={() =>
+                  navigate({ pathname: companyPath('advisor', slug, 'checks'), search: location.search })
+                }
+              >
+                ‹ All checks
+              </button>
+            )}
+            <PageHeader
+              title={meta ? meta.label : 'Checks'}
+              subtitle={
+                meta
+                  ? meta.description
+                  : 'Data-quality checks over the synced ledger, so bookkeeping gaps get caught and fixed in QuickBooks before they distort the reports.'
+              }
+              actions={resync}
+            />
+            {syncError && <div className="upload-error sync-error">{syncError}</div>}
+            {!hasData && emptyCallout}
+            {hasData && (
+              <div className="section">
+                <Checks
+                  entries={dataset.entries}
+                  accountMap={dataset.accountMap}
+                  slug={slug}
+                  check={check}
+                  closedThrough={closedThrough}
+                  qboEnvironment={dataset.qboEnvironment}
+                  realmId={realmId}
+                  companyName={dataset.companyName}
+                  vendors={dataset.vendors}
+                />
+              </div>
+            )}
+          </>
+        );
+      })()}
 
       {tab === 'accounts' && (
         <>

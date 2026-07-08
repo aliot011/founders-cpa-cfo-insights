@@ -1087,3 +1087,63 @@ details.collapse > summary::-webkit-details-marker {
   font-size: 12px;
   color: var(--muted);
 }
+
+/* Back-to-menu link above a check's page header. */
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  background: none;
+  padding: 0;
+  margin-bottom: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent-dark);
+  cursor: pointer;
+}
+.back-link:hover {
+  text-decoration: underline;
+}
+
+/* Checks menu: one row per check. */
+.check-menu {
+  display: flex;
+  flex-direction: column;
+}
+.check-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: none;
+  font-family: inherit;
+  padding: 15px 18px;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+}
+.check-menu-item:last-child {
+  border-bottom: none;
+}
+.check-menu-item:hover {
+  background: #fbfcfb;
+}
+.check-menu-item:hover .check-menu-name {
+  color: var(--accent-dark);
+}
+.check-menu-name {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.check-menu-desc {
+  display: block;
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 2px;
+}

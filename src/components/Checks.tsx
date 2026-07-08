@@ -13,9 +13,9 @@ type QboEnv = 'sandbox' | 'production';
 interface Props {
   entries: LedgerEntry[];
   accountMap: AccountMap;
-  /** Company slug + active check, both from the URL. */
+  /** Company slug + active check (undefined = the checks menu), both from the URL. */
   slug: string;
-  check: CheckId;
+  check?: CheckId;
   /** Most recent closed month, the default review month. */
   closedThrough?: string | null;
   /** Which QBO host transaction deep links point at. */
@@ -29,22 +29,37 @@ interface Props {
 /** Accounts whose lines count as expense activity for the checks. */
 const SPEND_CATS = new Set<Category>(['cogs', 'opex', 'other_expense']);
 
-const CHECK_LABELS: Record<CheckId, string> = {
-  'missing-vendor': 'Missing vendors',
-  'missing-customer': 'Missing customers',
-  'missing-recurring': 'Missing recurring',
-  'multi-account': 'Multi-account vendors',
-  'parent-account': 'Parent accounts',
-  'vendor-1099': '1099 readiness',
-};
-
-const CHECK_ORDER: CheckId[] = [
-  'missing-vendor',
-  'missing-customer',
-  'missing-recurring',
-  'multi-account',
-  'parent-account',
-  'vendor-1099',
+export const CHECK_META: { id: CheckId; label: string; description: string }[] = [
+  {
+    id: 'missing-vendor',
+    label: 'Missing vendors',
+    description: 'Expense transactions with no vendor or payee name, invisible to vendor reporting.',
+  },
+  {
+    id: 'missing-customer',
+    label: 'Missing customers',
+    description: 'Revenue transactions with no customer name, invisible to customer-level reporting.',
+  },
+  {
+    id: 'missing-recurring',
+    label: 'Missing recurring',
+    description: 'Vendors with a monthly spend streak that went quiet in the review month.',
+  },
+  {
+    id: 'multi-account',
+    label: 'Multi-account vendors',
+    description: 'Vendors whose spend lands in more than one expense account, worth a scan for coding drift.',
+  },
+  {
+    id: 'parent-account',
+    label: 'Parent accounts',
+    description: 'Expenses posted to accounts that have sub-accounts instead of a specific leaf account.',
+  },
+  {
+    id: 'vendor-1099',
+    label: '1099 readiness',
+    description: 'Vendor profiles missing the tracking flag, tax ID, address, or email that 1099s and W-9s need.',
+  },
 ];
 
 /** Journal entries get their own bucket; every other flagged type is per-check. */
@@ -143,43 +158,40 @@ export function Checks({ entries, accountMap, slug, check, closedThrough, qboEnv
       ? ' This is the latest synced month, which may still be in progress.'
       : '';
 
+  const goTo = (id: CheckId) =>
+    navigate(`${companyPath('advisor', slug, 'checks')}/${checkSegment(id)}?month=${reviewMonth}`);
+
   return (
     <>
-      <nav className="tabs subtabs" role="tablist" aria-label="Checks">
-        {CHECK_ORDER.map((id) => {
-          const count = flagged[id].length;
-          return (
-            <button
-              key={id}
-              role="tab"
-              aria-selected={check === id}
-              className={`tab${check === id ? ' active' : ''}`}
-              onClick={() =>
-                navigate(
-                  `${companyPath('advisor', slug, 'checks')}/${checkSegment(id)}?month=${reviewMonth}`,
-                )
-              }
-            >
-              {CHECK_LABELS[id]}
-              <span className={`tab-count${count > 0 ? ' has-alerts' : ''}`}>{count}</span>
-            </button>
-          );
-        })}
-        <div className="tabs-meta">
-          <div className="period-picker">
-            <span className="muted" style={{ fontSize: 12 }}>Reviewing</span>
-            <select
-              className="pp-gran"
-              value={reviewMonth}
-              onChange={(e) => setSearchParams({ month: e.target.value })}
-            >
-              {[...months].reverse().map((m) => (
-                <option key={m} value={m}>{formatMonth(m)}</option>
-              ))}
-            </select>
-          </div>
+      <div className="period-picker kpi-toolbar">
+        <span className="muted" style={{ fontSize: 12 }}>Reviewing</span>
+        <select
+          className="pp-gran"
+          value={reviewMonth}
+          onChange={(e) => setSearchParams({ month: e.target.value }, { replace: true })}
+        >
+          {[...months].reverse().map((m) => (
+            <option key={m} value={m}>{formatMonth(m)}</option>
+          ))}
+        </select>
+      </div>
+
+      {!check && (
+        <div className="panel check-menu">
+          {CHECK_META.map((c) => {
+            const count = flagged[c.id].length;
+            return (
+              <button key={c.id} className="check-menu-item" onClick={() => goTo(c.id)}>
+                <span>
+                  <span className="check-menu-name">{c.label}</span>
+                  <span className="check-menu-desc">{c.description}</span>
+                </span>
+                <span className={`tab-count${count > 0 ? ' has-alerts' : ''}`}>{count}</span>
+              </button>
+            );
+          })}
         </div>
-      </nav>
+      )}
 
       {check === 'missing-vendor' && (
         <TransactionPanel
