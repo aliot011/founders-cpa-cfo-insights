@@ -1147,3 +1147,12 @@ details.collapse > summary::-webkit-details-marker {
   color: var(--muted);
   margin-top: 2px;
 }
+/* Menu badges: larger than the inline tab counts, bordered in the number's color. */
+.check-menu .tab-count {
+  font-size: 14px;
+  min-width: 32px;
+  padding: 5px 12px;
+  border: 1.5px solid currentColor;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
