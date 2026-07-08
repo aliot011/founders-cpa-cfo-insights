@@ -179,14 +179,24 @@ export function Checks({ entries, accountMap, slug, check, closedThrough, qboEnv
       {!check && (
         <div className="panel check-menu">
           {CHECK_META.map((c) => {
-            const count = flagged[c.id].length;
+            const hasIssues = flagged[c.id].length > 0;
             return (
-              <button key={c.id} className="check-menu-item" onClick={() => goTo(c.id)}>
+              <button
+                key={c.id}
+                className={`check-menu-item${hasIssues ? ' has-alerts' : ''}`}
+                onClick={() => goTo(c.id)}
+              >
                 <span>
                   <span className="check-menu-name">{c.label}</span>
                   <span className="check-menu-desc">{c.description}</span>
                 </span>
-                <span className={`tab-count${count > 0 ? ' has-alerts' : ''}`}>{count}</span>
+                <span
+                  className={`check-menu-status ${hasIssues ? 'bad' : 'ok'}`}
+                  title={hasIssues ? 'Issues found' : 'No issues'}
+                  aria-label={hasIssues ? 'Issues found' : 'No issues'}
+                >
+                  {hasIssues ? '!' : '✓'}
+                </span>
               </button>
             );
           })}

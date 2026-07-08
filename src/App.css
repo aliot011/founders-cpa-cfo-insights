@@ -1147,12 +1147,29 @@ details.collapse > summary::-webkit-details-marker {
   color: var(--muted);
   margin-top: 2px;
 }
-/* Menu badges: larger than the inline tab counts, bordered in the number's color. */
-.check-menu .tab-count {
-  font-size: 14px;
-  min-width: 32px;
-  padding: 5px 12px;
+/* Menu status: a checkmark when clean, an exclamation (and a red row) when not. */
+.check-menu-status {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+  font-weight: 700;
   border: 1.5px solid currentColor;
-  border-radius: 999px;
   flex-shrink: 0;
+}
+.check-menu-status.ok {
+  color: var(--pos);
+  background: var(--pos-soft);
+}
+.check-menu-status.bad {
+  color: var(--neg);
+  background: var(--neg-soft);
+}
+.check-menu-item.has-alerts {
+  background: var(--neg-soft);
+}
+.check-menu-item.has-alerts:hover {
+  background: #f9dcd6;
 }
