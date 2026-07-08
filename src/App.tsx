@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import './App.css';
 import type { AccountMap, ClientDataset, ClientSummary } from './types';
 import { api, ApiError } from './lib/api';
+import { formatMonth } from './lib/format';
 import { clearLastClient, loadLastClient, saveLastClient } from './lib/storage';
 import { ClientPicker } from './components/ClientPicker';
 import { Dashboard } from './components/Dashboard';
@@ -117,6 +118,13 @@ export default function App() {
 
   const client = clients?.find((c) => c.realmId === selected) ?? null;
 
+  // Distinct synced months, ascending — drives the closed-month selector and topbar label.
+  const syncedMonths = useMemo(
+    () => [...new Set((dataset?.entries ?? []).map((e) => e.month))].sort(),
+    [dataset],
+  );
+  const closedMonthLabel = client?.closedThrough ?? syncedMonths[syncedMonths.length - 1] ?? null;
+
   async function handleDataChanged() {
     if (selected) await Promise.all([loadDataset(selected), refreshClients()]);
   }
@@ -139,8 +147,8 @@ export default function App() {
           </div>
         </div>
         {client && clients && (
-          <div className="topbar-meta">
-            {clients.length > 1 && (
+          <div className="topbar-client">
+            {clients.length > 1 ? (
               <select
                 className="client-switcher"
                 value={client.realmId}
@@ -153,16 +161,12 @@ export default function App() {
                   </option>
                 ))}
               </select>
+            ) : (
+              <span className="topbar-client-name">{client.companyName}</span>
             )}
-            {clients.length === 1 && <span>{client.companyName}</span>}
-            {dataset && (
-              <span title={`Last synced ${new Date(dataset.lastSyncedAt).toLocaleString()}`}>
-                Synced {new Date(dataset.lastSyncedAt).toLocaleDateString()}
-              </span>
-            )}
-            <button className="btn" onClick={() => selectClient(null)}>
-              Manage clients
-            </button>
+            <span className="topbar-closed">
+              {closedMonthLabel ? `Closed through ${formatMonth(closedMonthLabel)}` : 'Not synced yet'}
+            </span>
           </div>
         )}
       </header>
@@ -181,12 +185,14 @@ export default function App() {
                 dataset={dataset ?? { ...EMPTY_DATASET, companyName: client.companyName }}
                 onMapChange={handleMapChange}
                 initialTab={neverSynced ? 'sync' : undefined}
+                closedThrough={client.closedThrough}
                 syncTab={
                   <SyncTab
                     client={client}
-                    dataset={dataset}
+                    months={syncedMonths}
                     onDataChanged={handleDataChanged}
                     onDisconnected={() => handleDisconnected(client.realmId)}
+                    onManageClients={() => selectClient(null)}
                   />
                 }
               />

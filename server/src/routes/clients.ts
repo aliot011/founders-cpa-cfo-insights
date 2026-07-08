@@ -8,6 +8,7 @@ import {
   listSyncLog,
   saveAccountMap,
   setAccountingMethod,
+  setClosedThrough,
   setSyncStartDate,
 } from '../db.ts';
 import { ApiError } from '../errors.ts';
@@ -35,6 +36,7 @@ clientsRouter.get('/', (_req, res) => {
       syncStartDate: c.sync_start_date,
       companyStartDate: c.company_start_date,
       accountingMethod: c.accounting_method,
+      closedThrough: c.closed_through,
     })),
   );
 });
@@ -96,9 +98,15 @@ clientsRouter.get('/:realmId/sync-log', (req, res) => {
   );
 });
 
+const MONTH_RE = /^\d{4}-\d{2}$/;
+
 clientsRouter.put('/:realmId/settings', (req, res) => {
   requireConnection(req.params.realmId);
-  const body = (req.body ?? {}) as { syncStartDate?: string | null; accountingMethod?: AccountingMethod };
+  const body = (req.body ?? {}) as {
+    syncStartDate?: string | null;
+    accountingMethod?: AccountingMethod;
+    closedThrough?: string | null;
+  };
   if ('syncStartDate' in body) {
     if (body.syncStartDate != null && !DATE_RE.test(body.syncStartDate)) {
       throw new ApiError(400, 'syncStartDate must be YYYY-MM-DD or null.', 'bad_request');
@@ -110,6 +118,12 @@ clientsRouter.put('/:realmId/settings', (req, res) => {
       throw new ApiError(400, "accountingMethod must be 'Accrual' or 'Cash'.", 'bad_request');
     }
     setAccountingMethod(req.params.realmId, body.accountingMethod);
+  }
+  if ('closedThrough' in body) {
+    if (body.closedThrough != null && !MONTH_RE.test(body.closedThrough)) {
+      throw new ApiError(400, 'closedThrough must be YYYY-MM or null.', 'bad_request');
+    }
+    setClosedThrough(req.params.realmId, body.closedThrough ?? null);
   }
   res.json({ ok: true });
 });

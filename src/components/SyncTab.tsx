@@ -1,33 +1,32 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from '../lib/api.ts';
-import type { AccountingMethod, ClientDataset, ClientSummary, SyncLogEntry } from '../types.ts';
+import { formatMonth } from '../lib/format.ts';
+import type { AccountingMethod, ClientSummary } from '../types.ts';
 
 interface Props {
   client: ClientSummary;
-  dataset: ClientDataset | null;
+  /** Distinct synced months (YYYY-MM, ascending) for the closed-month selector. */
+  months: string[];
   /** Called after a successful sync or settings change so the app refetches. */
   onDataChanged: () => void;
   onDisconnected: () => void;
+  onManageClients: () => void;
 }
 
-export function SyncTab({ client, dataset, onDataChanged, onDisconnected }: Props) {
+export function SyncTab({ client, months, onDataChanged, onDisconnected, onManageClients }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [log, setLog] = useState<SyncLogEntry[]>([]);
   const [startDate, setStartDate] = useState(client.syncStartDate ?? '');
   const [savingSettings, setSavingSettings] = useState(false);
   const [method, setMethod] = useState<AccountingMethod>(client.accountingMethod);
-
-  const refreshLog = useCallback(() => {
-    api.getSyncLog(client.realmId).then(setLog).catch(() => setLog([]));
-  }, [client.realmId]);
+  const [closedThrough, setClosedThrough] = useState(client.closedThrough ?? '');
 
   useEffect(() => {
-    refreshLog();
     setStartDate(client.syncStartDate ?? '');
     setMethod(client.accountingMethod);
+    setClosedThrough(client.closedThrough ?? '');
     setError(null);
-  }, [client.realmId, client.syncStartDate, client.accountingMethod, refreshLog]);
+  }, [client.realmId, client.syncStartDate, client.accountingMethod, client.closedThrough]);
 
   async function handleSync() {
     setBusy(true);
@@ -39,7 +38,6 @@ export function SyncTab({ client, dataset, onDataChanged, onDisconnected }: Prop
       setError(err instanceof Error ? err.message : 'Sync failed.');
     } finally {
       setBusy(false);
-      refreshLog();
     }
   }
 
@@ -69,6 +67,19 @@ export function SyncTab({ client, dataset, onDataChanged, onDisconnected }: Prop
     }
   }
 
+  async function handleClosedThroughChange(next: string) {
+    const prev = closedThrough;
+    setClosedThrough(next);
+    setError(null);
+    try {
+      await api.saveSettings(client.realmId, { closedThrough: next || null });
+      onDataChanged();
+    } catch (err) {
+      setClosedThrough(prev);
+      setError(err instanceof Error ? err.message : 'Could not save settings.');
+    }
+  }
+
   async function handleDisconnect() {
     if (!confirm(`Disconnect ${client.companyName} from QuickBooks? Its synced data will be removed.`)) return;
     try {
@@ -93,52 +104,10 @@ export function SyncTab({ client, dataset, onDataChanged, onDisconnected }: Prop
       <div className="section">
         <div className="panel">
           <div className="panel-head">
-            <h3>QuickBooks sync</h3>
+            <h3>Sync settings</h3>
             <button className="btn btn-primary" onClick={handleSync} disabled={busy || client.status === 'needs_reauth'}>
               {busy ? 'Syncing…' : 'Sync now'}
             </button>
-          </div>
-          <div className="panel-body sync-status">
-            {dataset ? (
-              <>
-                <div className="sync-fact">
-                  <span className="sync-fact-label">Last synced</span>
-                  <span>{new Date(dataset.lastSyncedAt).toLocaleString()}</span>
-                </div>
-                <div className="sync-fact">
-                  <span className="sync-fact-label">Transactions</span>
-                  <span>{dataset.entries.length.toLocaleString()}</span>
-                </div>
-                <div className="sync-fact">
-                  <span className="sync-fact-label">Period</span>
-                  <span>
-                    {dataset.startDate} → {dataset.endDate}
-                  </span>
-                </div>
-                {dataset.notes.length > 0 && (
-                  <div className="notes sync-notes">
-                    {dataset.notes.map((n, i) => (
-                      <span key={i} className="note-chip">
-                        {n}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </>
-            ) : (
-              <p className="sync-empty">
-                <strong>{client.companyName}</strong> hasn&rsquo;t been synced yet. Run the first sync to pull its
-                General Ledger from QuickBooks — the dashboard tabs light up once data lands.
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="section">
-        <div className="panel">
-          <div className="panel-head">
-            <h3>Sync settings</h3>
           </div>
           <div className="panel-body">
             <label className="sync-setting">
@@ -153,6 +122,23 @@ export function SyncTab({ client, dataset, onDataChanged, onDisconnected }: Prop
                 <select value={method} onChange={(e) => handleMethodChange(e.target.value as AccountingMethod)}>
                   <option value="Accrual">Accrual</option>
                   <option value="Cash">Cash</option>
+                </select>
+              </span>
+            </label>
+            <label className="sync-setting">
+              <span>
+                Most recent closed month
+                <span className="sync-setting-hint">
+                  Summary, KPIs, Detail, Flux, and Vendor Spend run through this month only, so an in-progress
+                  month never muddies the reports. Checks always cover every synced month.
+                </span>
+              </span>
+              <span className="sync-setting-controls">
+                <select value={closedThrough} onChange={(e) => handleClosedThroughChange(e.target.value)}>
+                  <option value="">Latest synced month</option>
+                  {[...months].reverse().map((m) => (
+                    <option key={m} value={m}>{formatMonth(m)}</option>
+                  ))}
                 </select>
               </span>
             </label>
@@ -184,39 +170,10 @@ export function SyncTab({ client, dataset, onDataChanged, onDisconnected }: Prop
         </div>
       </div>
 
-      {log.length > 0 && (
-        <div className="section">
-          <div className="panel">
-            <div className="panel-head">
-              <h3>Sync history</h3>
-            </div>
-            <div className="table-scroll">
-              <table className="metrics sync-log">
-                <thead>
-                  <tr>
-                    <th className="metric-name">Started</th>
-                    <th>Status</th>
-                    <th>Transactions</th>
-                    <th className="sync-log-msg">Details</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {log.map((row) => (
-                    <tr key={row.id}>
-                      <td className="metric-name">{new Date(row.startedAt).toLocaleString()}</td>
-                      <td className={`sync-log-status ${row.status}`}>{row.status}</td>
-                      <td>{row.entryCount != null ? row.entryCount.toLocaleString() : '—'}</td>
-                      <td className="sync-log-msg">{row.message ?? ''}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="section">
+      <div className="section sync-footer">
+        <button className="btn" onClick={onManageClients}>
+          Manage clients
+        </button>
         <button className="btn sync-disconnect" onClick={handleDisconnect}>
           Disconnect {client.companyName} from QuickBooks
         </button>

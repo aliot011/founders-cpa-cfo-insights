@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS connections (
   company_start_date TEXT,
   sync_start_date TEXT,
   accounting_method TEXT NOT NULL DEFAULT 'Accrual',
+  closed_through TEXT,
   connected_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
@@ -47,11 +48,14 @@ CREATE TABLE IF NOT EXISTS sync_log (
 );
 `);
 
-// Migrate databases created before accounting_method existed.
+// Migrate databases created before newer connection columns existed.
 {
   const cols = db.prepare('PRAGMA table_info(connections)').all() as { name: string }[];
   if (!cols.some((c) => c.name === 'accounting_method')) {
     db.exec(`ALTER TABLE connections ADD COLUMN accounting_method TEXT NOT NULL DEFAULT 'Accrual'`);
+  }
+  if (!cols.some((c) => c.name === 'closed_through')) {
+    db.exec('ALTER TABLE connections ADD COLUMN closed_through TEXT');
   }
 }
 
@@ -66,6 +70,8 @@ export interface ConnectionRow {
   company_start_date: string | null;
   sync_start_date: string | null;
   accounting_method: AccountingMethod;
+  /** YYYY-MM; reporting tabs stop at this month. Null = show everything. */
+  closed_through: string | null;
   connected_at: string;
   updated_at: string;
 }
@@ -174,6 +180,14 @@ export function setSyncStartDate(realmId: string, syncStartDate: string | null):
 export function setAccountingMethod(realmId: string, method: AccountingMethod): void {
   db.prepare('UPDATE connections SET accounting_method = ?, updated_at = ? WHERE realm_id = ?').run(
     method,
+    new Date().toISOString(),
+    realmId,
+  );
+}
+
+export function setClosedThrough(realmId: string, closedThrough: string | null): void {
+  db.prepare('UPDATE connections SET closed_through = ?, updated_at = ? WHERE realm_id = ?').run(
+    closedThrough,
     new Date().toISOString(),
     realmId,
   );

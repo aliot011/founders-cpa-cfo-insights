@@ -71,6 +71,8 @@ export interface ClientSummary {
   syncStartDate: string | null;
   companyStartDate: string | null;
   accountingMethod: AccountingMethod;
+  /** Most recent closed month (YYYY-MM); reporting tabs stop here. Null = latest. */
+  closedThrough: string | null;
 }
 
 /** A client's synced dataset, as served by the API. */

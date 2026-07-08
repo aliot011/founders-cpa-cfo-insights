@@ -46,7 +46,10 @@ export const api = {
   getSyncLog: (realmId: string, limit = 20) =>
     request<SyncLogEntry[]>(`/clients/${encodeURIComponent(realmId)}/sync-log?limit=${limit}`),
 
-  saveSettings: (realmId: string, settings: { syncStartDate?: string | null; accountingMethod?: AccountingMethod }) =>
+  saveSettings: (
+    realmId: string,
+    settings: { syncStartDate?: string | null; accountingMethod?: AccountingMethod; closedThrough?: string | null },
+  ) =>
     request<{ ok: true }>(`/clients/${encodeURIComponent(realmId)}/settings`, {
       method: 'PUT',
       body: JSON.stringify(settings),
