@@ -6,8 +6,10 @@ import { api, ApiError } from './lib/api';
 import { formatMonth } from './lib/format';
 import {
   adminPath,
+  checkForSegment,
   companyPath,
   companySlug,
+  DEFAULT_CHECK_SEGMENT,
   DEFAULT_SEGMENT,
   findCompany,
   TAB_SEGMENTS,
@@ -67,11 +69,11 @@ export default function App() {
     <Routes>
       <Route path="/" element={<HomeRoute clients={clients} refreshClients={refreshClients} />} />
       <Route
-        path="/client/:company/:tab?"
+        path="/client/:company/:tab?/:sub?"
         element={<CompanyRoute side="client" clients={clients} refreshClients={refreshClients} />}
       />
       <Route
-        path="/advisor/:company/:tab?"
+        path="/advisor/:company/:tab?/:sub?"
         element={<CompanyRoute side="advisor" clients={clients} refreshClients={refreshClients} />}
       />
       <Route path="/admin/:tab?" element={<AdminRoute clients={clients} refreshClients={refreshClients} />} />
@@ -200,12 +202,13 @@ function HomeRoute({ clients, refreshClients }: RouteProps) {
 
 function CompanyRoute({ side, clients, refreshClients }: RouteProps & { side: 'client' | 'advisor' }) {
   const navigate = useNavigate();
-  const params = useParams<{ company: string; tab?: string }>();
+  const params = useParams<{ company: string; tab?: string; sub?: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const client = findCompany(clients, params.company) ?? null;
   const slug = client ? companySlug(clients, client) : null;
   const tab = tabForSegment(side, params.tab);
+  const check = tab === 'checks' ? checkForSegment(params.sub) : undefined;
 
   const [dataset, setDataset] = useState<ClientDataset | null>(null);
   const [neverSynced, setNeverSynced] = useState(false);
@@ -275,6 +278,11 @@ function CompanyRoute({ side, clients, refreshClients }: RouteProps & { side: 'c
 
   if (!client || !slug) return <Navigate to="/" replace />;
   if (!tab) return <Navigate to={companyPath(side, slug, DEFAULT_SEGMENT[side])} replace />;
+  // Checks has sub-routes (/checks/:check); every other tab has none.
+  if (tab === 'checks' && !check) {
+    return <Navigate to={`${companyPath(side, slug, 'checks')}/${DEFAULT_CHECK_SEGMENT}`} replace />;
+  }
+  if (tab !== 'checks' && params.sub) return <Navigate to={companyPath(side, slug, params.tab)} replace />;
   // A company with no data yet only has the advisor's Sync tab to offer.
   if (neverSynced && side === 'client') return <Navigate to={companyPath('advisor', slug, 'sync')} replace />;
 
@@ -285,7 +293,7 @@ function CompanyRoute({ side, clients, refreshClients }: RouteProps & { side: 'c
         client={client}
         latestMonth={syncedMonths[syncedMonths.length - 1] ?? null}
         side={side}
-        segment={params.tab}
+        segment={params.sub ? `${params.tab}/${params.sub}` : params.tab}
       />
       <main className="content">
         {error && <div className="upload-error sync-error">{error}</div>}
@@ -299,6 +307,7 @@ function CompanyRoute({ side, clients, refreshClients }: RouteProps & { side: 'c
             side={side}
             tab={tab}
             slug={slug}
+            check={check}
             closedThrough={client.closedThrough}
             syncTab={
               <SyncTab

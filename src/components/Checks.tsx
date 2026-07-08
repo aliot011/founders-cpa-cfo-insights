@@ -1,16 +1,19 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { AccountMap, Category, LedgerEntry } from '../types';
 import { formatCurrencyExact } from '../lib/format';
+import { checkSegment, companyPath, type CheckId } from '../lib/routes';
 
 interface Props {
   entries: LedgerEntry[];
   accountMap: AccountMap;
+  /** Company slug + active check, both from the URL. */
+  slug: string;
+  check: CheckId;
 }
 
 /** Accounts whose lines count as expense activity for the checks. */
 const SPEND_CATS = new Set<Category>(['cogs', 'opex', 'other_expense']);
-
-type CheckId = 'missing-vendor' | 'missing-customer';
 
 interface CheckDef {
   id: CheckId;
@@ -65,8 +68,8 @@ function usDate(iso: string): string {
 const byDateDesc = (a: LedgerEntry, b: LedgerEntry) =>
   b.date.localeCompare(a.date) || a.account.localeCompare(b.account);
 
-export function Checks({ entries, accountMap }: Props) {
-  const [check, setCheck] = useState<CheckId>('missing-vendor');
+export function Checks({ entries, accountMap, slug, check }: Props) {
+  const navigate = useNavigate();
 
   const flaggedByCheck = useMemo<Record<CheckId, LedgerEntry[]>>(() => {
     const cat = (e: LedgerEntry) => accountMap[e.account] ?? 'ignore';
@@ -93,7 +96,7 @@ export function Checks({ entries, accountMap }: Props) {
               role="tab"
               aria-selected={check === c.id}
               className={`tab${check === c.id ? ' active' : ''}`}
-              onClick={() => setCheck(c.id)}
+              onClick={() => navigate(`${companyPath('advisor', slug, 'checks')}/${checkSegment(c.id)}`)}
             >
               {c.label}
               <span className={`tab-count${count > 0 ? ' has-alerts' : ''}`}>{count}</span>

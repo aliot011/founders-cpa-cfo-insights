@@ -34,6 +34,25 @@ export function tabForSegment(side: Side, segment: string | undefined): TabId | 
   return TAB_SEGMENTS[side].find((t) => t.segment === segment)?.id;
 }
 
+// ---- Checks sub-routes: /advisor/:company/checks/:check ----------------
+
+export type CheckId = 'missing-vendor' | 'missing-customer';
+
+export const CHECK_SEGMENTS: { id: CheckId; segment: string }[] = [
+  { id: 'missing-vendor', segment: 'missing-vendors' },
+  { id: 'missing-customer', segment: 'missing-customers' },
+];
+
+export const DEFAULT_CHECK_SEGMENT = CHECK_SEGMENTS[0].segment;
+
+export function checkForSegment(segment: string | undefined): CheckId | undefined {
+  return CHECK_SEGMENTS.find((c) => c.segment === segment)?.id;
+}
+
+export function checkSegment(id: CheckId): string {
+  return CHECK_SEGMENTS.find((c) => c.id === id)!.segment;
+}
+
 function slugify(name: string): string {
   return (
     name

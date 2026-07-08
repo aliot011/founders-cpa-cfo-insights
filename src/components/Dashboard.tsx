@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import type { AccountMap, ClientDataset } from '../types';
 import { computeMetrics } from '../lib/metrics';
 import { formatMonth } from '../lib/format';
-import { adminPath, companyPath, TAB_SEGMENTS, type Side } from '../lib/routes';
+import { adminPath, companyPath, TAB_SEGMENTS, type CheckId, type Side } from '../lib/routes';
 import { KpiCards } from './KpiCards';
 import { MetricsTable } from './MetricsTable';
 import { Charts } from './Charts';
@@ -21,6 +21,8 @@ interface Props {
   side: 'client' | 'advisor';
   tab: TabId;
   slug: string;
+  /** Active check when tab === 'checks' (from the URL). */
+  check?: CheckId;
   /** Most recent closed month (YYYY-MM); reporting tabs stop here. Null = latest. */
   closedThrough?: string | null;
 }
@@ -58,7 +60,7 @@ export function PortalSeg({ side, slug }: { side: Side; slug: string | null }) {
   );
 }
 
-export function Dashboard({ dataset, onMapChange, syncTab, side, tab, slug, closedThrough }: Props) {
+export function Dashboard({ dataset, onMapChange, syncTab, side, tab, slug, check, closedThrough }: Props) {
   const navigate = useNavigate();
   const [kpiMonth, setKpiMonth] = useState<string | null>(null); // null = latest
 
@@ -216,9 +218,9 @@ export function Dashboard({ dataset, onMapChange, syncTab, side, tab, slug, clos
             subtitle="Data-quality checks over the synced ledger, so bookkeeping gaps get caught and fixed in QuickBooks before they distort the reports."
           />
           {!hasData && emptyCallout}
-          {hasData && (
+          {hasData && check && (
             <div className="section">
-              <Checks entries={dataset.entries} accountMap={dataset.accountMap} />
+              <Checks entries={dataset.entries} accountMap={dataset.accountMap} slug={slug} check={check} />
             </div>
           )}
         </>
