@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { AccountMap, Category, LedgerEntry } from '../types';
+import { PNL_CATEGORIES, type AccountMap, type Category, type LedgerEntry } from '../types';
 import { computeCategorySigns } from '../lib/metrics';
 import { bucketMonth, formatCurrency, type Granularity } from '../lib/format';
 
@@ -58,10 +58,16 @@ function payeeOf(e: LedgerEntry): string {
 const sum = (cells: number[]) => cells.reduce((a, b) => a + b, 0);
 const byTotalDesc = (a: ChildRow, b: ChildRow) => b.total - a.total || a.label.localeCompare(b.label);
 
+/** Only P&L accounts belong in a spend pivot — balance-sheet legs (cash, A/P, credit cards) would double-count every payment. */
+const PNL_CATS = new Set<Category>(PNL_CATEGORIES);
+
 export function VendorSpend({ entries, accountMap }: Props) {
   const accounts = useMemo(
-    () => [...new Set(entries.map((e) => e.account))].sort((a, b) => a.localeCompare(b)),
-    [entries],
+    () =>
+      [...new Set(entries.map((e) => e.account))]
+        .filter((a) => PNL_CATS.has(accountMap[a] ?? 'ignore'))
+        .sort((a, b) => a.localeCompare(b)),
+    [entries, accountMap],
   );
   const spendAccounts = useMemo(
     () => accounts.filter((a) => SPEND_CATS.has(accountMap[a] ?? 'ignore')),
@@ -117,10 +123,11 @@ export function VendorSpend({ entries, accountMap }: Props) {
     // regardless of the export's sign convention (matches the rest of the app).
     const mult = computeCategorySigns(entries, accountMap);
 
+    const allowed = new Set(accounts);
     const parents = new Map<string, { cells: number[]; children: Map<string, number[]> }>();
     const colTotals = columns.map(() => 0);
     for (const e of entries) {
-      if (!selected.has(e.account)) continue;
+      if (!selected.has(e.account) || !allowed.has(e.account)) continue;
       const col = monthToCol.get(e.month);
       if (col === undefined) continue;
       const payee = payeeOf(e);
@@ -153,7 +160,7 @@ export function VendorSpend({ entries, accountMap }: Props) {
       }))
       .sort(byTotalDesc);
     return { rowList, colTotals, grand: sum(colTotals) };
-  }, [entries, accountMap, selected, rowMode, columns]);
+  }, [entries, accountMap, accounts, selected, rowMode, columns]);
 
   const allExpanded = pivot.rowList.length > 0 && pivot.rowList.every((r) => expanded.has(r.label));
 
@@ -380,7 +387,7 @@ function AccountPicker({ accounts, spendAccounts, selected, onChange }: PickerPr
             </button>
           </div>
           {group('Spend accounts', spendAccounts)}
-          {group('Other accounts', otherAccounts)}
+          {group('Income accounts', otherAccounts)}
         </div>
       )}
     </div>
