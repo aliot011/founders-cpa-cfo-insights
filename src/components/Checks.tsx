@@ -4,7 +4,7 @@ import type { AccountMap, Category, LedgerEntry } from '../types';
 import { formatCurrency, formatCurrencyExact, formatMonth, formatMonthShort } from '../lib/format';
 import { findMissingRecurringVendors, type RecurringMiss } from '../lib/recurring';
 import { findMultiAccountVendors, type MultiAccountVendor } from '../lib/multiAccount';
-import { qboSwitchUrl, qboTxnUrl } from '../lib/qbo';
+import { qboSwitchUrl, qboTxnUrls } from '../lib/qbo';
 import { checkSegment, companyPath, type CheckId } from '../lib/routes';
 
 type QboEnv = 'sandbox' | 'production';
@@ -56,17 +56,41 @@ function usDate(iso: string): string {
 const byDateDesc = (a: LedgerEntry, b: LedgerEntry) =>
   b.date.localeCompare(a.date) || a.account.localeCompare(b.account);
 
+/** How long the switchCompany hop gets before we steer the tab to the transaction. */
+const QBO_SWITCH_DELAY_MS = 5000;
+
 /** A date that deep-links to the transaction in QuickBooks when possible. */
 function TxnDate({ env, realmId, date, txn, companyName }: { env: QboEnv; realmId: string; date: string; txn: Pick<LedgerEntry, 'transactionType' | 'txnId'>; companyName: string }) {
-  const url = qboTxnUrl(env, realmId, txn);
-  if (!url) return <>{usDate(date)}</>;
+  const urls = qboTxnUrls(env, realmId, txn);
+  if (!urls) return <>{usDate(date)}</>;
+
+  // Open the tab on the company switch, keep its handle, then steer the same
+  // tab to the transaction once the switch has had time to land. We cannot
+  // read the cross-origin tab, but navigating a tab we opened is allowed.
+  // Worst case (tab closed early, timer never fires) the tab is on the right
+  // company's homepage — never the wrong books.
+  function open(ev: React.MouseEvent) {
+    if (ev.metaKey || ev.ctrlKey || ev.button !== 0) return; // middle/cmd-click follows the href
+    ev.preventDefault();
+    const w = window.open(urls!.switchUrl, '_blank');
+    if (!w) return;
+    window.setTimeout(() => {
+      try {
+        w.location.href = urls!.txnUrl;
+      } catch {
+        // Tab was closed — nothing to steer.
+      }
+    }, QBO_SWITCH_DELAY_MS);
+  }
+
   return (
     <a
       className="txn-link"
-      href={url}
+      href={urls.switchUrl}
+      onClick={open}
       target="_blank"
       rel="noopener"
-      title={`Open in QuickBooks (switches your QBO session to ${companyName} first)`}
+      title={`Opens ${companyName} in QuickBooks, then this transaction (~5s)`}
     >
       {usDate(date)} ↗
     </a>
