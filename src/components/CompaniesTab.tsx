@@ -3,8 +3,8 @@ import type { ClientSummary } from '../types.ts';
 
 interface Props {
   clients: ClientSummary[];
-  /** The company currently open in the dashboard. */
-  currentRealmId: string;
+  /** The company currently open in the dashboard, if any. */
+  currentRealmId?: string;
   onOpen: (realmId: string) => void;
   onDisconnect: (client: ClientSummary) => void;
 }

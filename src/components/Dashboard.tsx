@@ -1,7 +1,9 @@
 import { useMemo, useState, type ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { AccountMap, ClientDataset } from '../types';
 import { computeMetrics } from '../lib/metrics';
 import { formatMonth } from '../lib/format';
+import { adminPath, companyPath, TAB_SEGMENTS, type Side } from '../lib/routes';
 import { KpiCards } from './KpiCards';
 import { MetricsTable } from './MetricsTable';
 import { Charts } from './Charts';
@@ -13,11 +15,12 @@ import { Checks } from './Checks';
 interface Props {
   dataset: ClientDataset;
   onMapChange: (map: AccountMap) => void;
-  /** Advisor-side tab contents provided by App (it owns client/user state). */
+  /** The Sync tab's content, provided by App (it owns client/sync state). */
   syncTab: ReactNode;
-  usersTab: ReactNode;
-  companiesTab: ReactNode;
-  initialTab?: TabId;
+  /** Route state: which portal, which tab, and the company's URL slug. */
+  side: 'client' | 'advisor';
+  tab: TabId;
+  slug: string;
   /** Most recent closed month (YYYY-MM); reporting tabs stop here. Null = latest. */
   closedThrough?: string | null;
 }
@@ -26,51 +29,37 @@ export type TabId =
   | 'summary' | 'kpis' | 'detail' | 'variance' | 'vendors'
   | 'checks' | 'accounts' | 'sync' | 'users' | 'companies';
 
-/**
- * The three portals: what a client sees, the advisor's workbench, and
- * practice administration. All are visible to everyone until sign-in
- * exists to tell the roles apart.
- */
-type Side = 'client' | 'advisor' | 'admin';
-
-const SIDE_TABS: Record<Side, { id: TabId; label: string }[]> = {
-  client: [
-    { id: 'summary', label: 'Summary' },
-    { id: 'kpis', label: 'KPIs' },
-    { id: 'detail', label: 'Detail' },
-    { id: 'variance', label: 'Flux' },
-    { id: 'vendors', label: 'Vendor Spend' },
-  ],
-  advisor: [
-    { id: 'checks', label: 'Checks' },
-    { id: 'accounts', label: 'Accounts' },
-    { id: 'sync', label: 'Sync' },
-  ],
-  admin: [
-    { id: 'users', label: 'Users' },
-    { id: 'companies', label: 'Companies' },
-  ],
-};
-
 const SIDES: { id: Side; label: string }[] = [
   { id: 'client', label: 'Client' },
   { id: 'advisor', label: 'Advisor' },
   { id: 'admin', label: 'Admin' },
 ];
 
-const sideOf = (tab: TabId): Side =>
-  (Object.keys(SIDE_TABS) as Side[]).find((s) => SIDE_TABS[s].some((t) => t.id === tab)) ?? 'client';
+/**
+ * Portal switcher shared by the company dashboard and the admin pages. All
+ * portals are visible to everyone until sign-in exists to tell roles apart.
+ */
+export function PortalSeg({ side, slug }: { side: Side; slug: string | null }) {
+  const navigate = useNavigate();
+  function go(target: Side) {
+    if (target === side) return;
+    if (target === 'admin') navigate(adminPath());
+    else if (slug) navigate(companyPath(target, slug));
+    else navigate('/');
+  }
+  return (
+    <div className="seg" role="group" aria-label="Portal">
+      {SIDES.map((s) => (
+        <button key={s.id} className={side === s.id ? 'active' : ''} onClick={() => go(s.id)}>
+          {s.label}
+        </button>
+      ))}
+    </div>
+  );
+}
 
-export function Dashboard({ dataset, onMapChange, syncTab, usersTab, companiesTab, initialTab, closedThrough }: Props) {
-  const [side, setSide] = useState<Side>(initialTab ? sideOf(initialTab) : 'client');
-  // Each side remembers its own active tab.
-  const [tabBySide, setTabBySide] = useState<Record<Side, TabId>>({
-    client: initialTab && sideOf(initialTab) === 'client' ? initialTab : 'summary',
-    advisor: initialTab && sideOf(initialTab) === 'advisor' ? initialTab : 'checks',
-    admin: initialTab && sideOf(initialTab) === 'admin' ? initialTab : 'users',
-  });
-  const tab = tabBySide[side];
-  const setTab = (t: TabId) => setTabBySide((prev) => ({ ...prev, [side]: t }));
+export function Dashboard({ dataset, onMapChange, syncTab, side, tab, slug, closedThrough }: Props) {
+  const navigate = useNavigate();
   const [kpiMonth, setKpiMonth] = useState<string | null>(null); // null = latest
 
   // Reporting tabs stop at the most recent closed month; Checks and Accounts
@@ -110,25 +99,19 @@ export function Dashboard({ dataset, onMapChange, syncTab, usersTab, companiesTa
   return (
     <>
       <nav className="tabs" role="tablist">
-        {SIDE_TABS[side].map((t) => (
+        {TAB_SEGMENTS[side].map((t) => (
           <button
             key={t.id}
             role="tab"
             aria-selected={tab === t.id}
             className={`tab${tab === t.id ? ' active' : ''}`}
-            onClick={() => setTab(t.id)}
+            onClick={() => navigate(companyPath(side, slug, t.segment))}
           >
             {t.label}
           </button>
         ))}
         <div className="tabs-meta">
-          <div className="seg" role="group" aria-label="Portal">
-            {SIDES.map((s) => (
-              <button key={s.id} className={side === s.id ? 'active' : ''} onClick={() => setSide(s.id)}>
-                {s.label}
-              </button>
-            ))}
-          </div>
+          <PortalSeg side={side} slug={slug} />
         </div>
       </nav>
 
@@ -270,31 +253,11 @@ export function Dashboard({ dataset, onMapChange, syncTab, usersTab, companiesTa
           {syncTab}
         </>
       )}
-
-      {tab === 'users' && (
-        <>
-          <PageHeader
-            title="Users"
-            subtitle="Who can access Advisory Intelligence: admins run the practice, advisors work every company, and client users see only their own companies' reports."
-          />
-          <div className="section">{usersTab}</div>
-        </>
-      )}
-
-      {tab === 'companies' && (
-        <>
-          <PageHeader
-            title="Companies"
-            subtitle="Every QuickBooks company connected to the practice — open one, connect another, or disconnect one you no longer serve."
-          />
-          <div className="section">{companiesTab}</div>
-        </>
-      )}
     </>
   );
 }
 
-function PageHeader({ title, subtitle }: { title: string; subtitle: string }) {
+export function PageHeader({ title, subtitle }: { title: string; subtitle: string }) {
   return (
     <header className="page-head">
       <h1>{title}</h1>
