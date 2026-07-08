@@ -4,7 +4,7 @@ import type { AccountMap, Category, LedgerEntry } from '../types';
 import { formatCurrency, formatCurrencyExact, formatMonth, formatMonthShort } from '../lib/format';
 import { findMissingRecurringVendors, type RecurringMiss } from '../lib/recurring';
 import { findMultiAccountVendors, type MultiAccountVendor } from '../lib/multiAccount';
-import { qboSwitchUrl, qboTxnUrls } from '../lib/qbo';
+import { qboTxnUrls } from '../lib/qbo';
 import { checkSegment, companyPath, type CheckId } from '../lib/routes';
 
 type QboEnv = 'sandbox' | 'production';
@@ -166,15 +166,6 @@ export function Checks({ entries, accountMap, slug, check, closedThrough, qboEnv
         })}
         <div className="tabs-meta">
           <div className="period-picker">
-            <a
-              className="link-btn"
-              href={qboSwitchUrl(qboEnvironment, realmId)}
-              target="_blank"
-              rel="noopener"
-              title={`Point your QuickBooks session at ${companyName} so transaction links open in the right books`}
-            >
-              Switch QBO ↗
-            </a>
             <span className="muted" style={{ fontSize: 12 }}>Reviewing</span>
             <select
               className="pp-gran"

@@ -236,9 +236,15 @@ export function Dashboard({ dataset, onMapChange, syncTab, side, tab, slug, chec
             title="Checks"
             subtitle="Data-quality checks over the synced ledger, so bookkeeping gaps get caught and fixed in QuickBooks before they distort the reports."
             actions={
-              <button className="btn btn-primary" onClick={handleSyncNow} disabled={syncing}>
-                {syncing ? 'Syncing…' : 'Sync now'}
-              </button>
+              <>
+                <button className="btn btn-primary" onClick={handleSyncNow} disabled={syncing}>
+                  {syncing ? 'Syncing…' : 'Re-Sync QuickBooks'}
+                </button>
+                <span className="page-head-sub">
+                  Last sync:{' '}
+                  {dataset.lastSyncedAt ? new Date(dataset.lastSyncedAt).toLocaleString() : 'never'}
+                </span>
+              </>
             }
           />
           {syncError && <div className="upload-error sync-error">{syncError}</div>}
