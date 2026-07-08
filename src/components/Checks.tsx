@@ -173,7 +173,7 @@ export function Checks({ entries, accountMap, slug, check, closedThrough, qboEnv
               rel="noopener"
               title={`Point your QuickBooks session at ${companyName} so transaction links open in the right books`}
             >
-              Switch QBO to this company ↗
+              Switch QBO ↗
             </a>
             <span className="muted" style={{ fontSize: 12 }}>Reviewing</span>
             <select
