@@ -23,6 +23,7 @@ interface Props {
   slug: string;
   /** Active check when tab === 'checks' (from the URL). */
   check?: CheckId;
+  realmId: string;
   /** Most recent closed month (YYYY-MM); reporting tabs stop here. Null = latest. */
   closedThrough?: string | null;
 }
@@ -60,7 +61,7 @@ export function PortalSeg({ side, slug }: { side: Side; slug: string | null }) {
   );
 }
 
-export function Dashboard({ dataset, onMapChange, syncTab, side, tab, slug, check, closedThrough }: Props) {
+export function Dashboard({ dataset, onMapChange, syncTab, side, tab, slug, check, realmId, closedThrough }: Props) {
   const navigate = useNavigate();
   const [kpiMonth, setKpiMonth] = useState<string | null>(null); // null = latest
 
@@ -227,6 +228,8 @@ export function Dashboard({ dataset, onMapChange, syncTab, side, tab, slug, chec
                 check={check}
                 closedThrough={closedThrough}
                 qboEnvironment={dataset.qboEnvironment}
+                realmId={realmId}
+                companyName={dataset.companyName}
               />
             </div>
           )}

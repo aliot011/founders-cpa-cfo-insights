@@ -30,10 +30,15 @@ function slugFor(transactionType: string | undefined): string | null {
   return TYPE_SLUGS[t] ?? (t.includes('journal') ? 'journal' : t.includes('expense') ? 'expense' : null);
 }
 
+function hostFor(environment: 'sandbox' | 'production'): string {
+  return environment === 'production' ? 'app.qbo.intuit.com' : 'app.sandbox.qbo.intuit.com';
+}
+
 /**
  * Deep link to the transaction in QuickBooks Online, or null when the type
  * has no known edit URL. Opens in the browser's current QBO session, so the
- * user must be signed into (or switch to) the same company.
+ * user must be signed into (or switch to) the same company — see
+ * qboSwitchUrl.
  */
 export function qboTxnUrl(
   environment: 'sandbox' | 'production',
@@ -42,6 +47,13 @@ export function qboTxnUrl(
   if (!entry.txnId) return null;
   const slug = slugFor(entry.transactionType);
   if (!slug) return null;
-  const host = environment === 'production' ? 'app.qbo.intuit.com' : 'app.sandbox.qbo.intuit.com';
-  return `https://${host}/app/${slug}?txnId=${encodeURIComponent(entry.txnId)}`;
+  return `https://${hostFor(environment)}/app/${slug}?txnId=${encodeURIComponent(entry.txnId)}`;
+}
+
+/**
+ * Point the browser's QBO session at this company. Lands on the QBO homepage;
+ * after that, every transaction link is guaranteed to open in the right books.
+ */
+export function qboSwitchUrl(environment: 'sandbox' | 'production', realmId: string): string {
+  return `https://${hostFor(environment)}/app/switchCompany?companyId=${encodeURIComponent(realmId)}`;
 }

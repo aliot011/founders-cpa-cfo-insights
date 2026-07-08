@@ -309,6 +309,7 @@ function CompanyRoute({ side, clients, refreshClients }: RouteProps & { side: 'c
             tab={tab}
             slug={slug}
             check={check}
+            realmId={client.realmId}
             closedThrough={client.closedThrough}
             syncTab={
               <SyncTab
