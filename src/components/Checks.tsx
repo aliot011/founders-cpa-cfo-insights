@@ -57,8 +57,8 @@ const byDateDesc = (a: LedgerEntry, b: LedgerEntry) =>
   b.date.localeCompare(a.date) || a.account.localeCompare(b.account);
 
 /** A date that deep-links to the transaction in QuickBooks when possible. */
-function TxnDate({ env, date, txn, companyName }: { env: QboEnv; date: string; txn: Pick<LedgerEntry, 'transactionType' | 'txnId'>; companyName: string }) {
-  const url = qboTxnUrl(env, txn);
+function TxnDate({ env, realmId, date, txn, companyName }: { env: QboEnv; realmId: string; date: string; txn: Pick<LedgerEntry, 'transactionType' | 'txnId'>; companyName: string }) {
+  const url = qboTxnUrl(env, realmId, txn);
   if (!url) return <>{usDate(date)}</>;
   return (
     <a
@@ -66,7 +66,7 @@ function TxnDate({ env, date, txn, companyName }: { env: QboEnv; date: string; t
       href={url}
       target="_blank"
       rel="noopener"
-      title={`Open in QuickBooks — make sure your QBO session is in ${companyName} (use the switch link above)`}
+      title={`Open in QuickBooks (switches your QBO session to ${companyName} first)`}
     >
       {usDate(date)} ↗
     </a>
@@ -171,6 +171,7 @@ export function Checks({ entries, accountMap, slug, check, closedThrough, qboEnv
           otherKind="Expense"
           flagged={flagged['missing-vendor']}
           env={qboEnvironment}
+          realmId={realmId}
           companyName={companyName}
           emptyText={`Every ${monthLabel} expense line carries a vendor (or payee) name — nothing to fix. This check covers accounts categorized as COGS, Operating Expenses, or Other Expense, including journal entries.${maybeOpen}`}
           caption={`These ${monthLabel} lines hit expense accounts but name no vendor, so they are invisible to vendor reporting (including the Vendor Spend tab and the Missing recurring check). Journal entries are the usual culprit. Fix by opening the transaction in QuickBooks, setting its Vendor/Name, then re-syncing.${maybeOpen}`}
@@ -183,6 +184,7 @@ export function Checks({ entries, accountMap, slug, check, closedThrough, qboEnv
           otherKind="Sale"
           flagged={flagged['missing-customer']}
           env={qboEnvironment}
+          realmId={realmId}
           companyName={companyName}
           emptyText={`Every ${monthLabel} revenue line carries a customer (or payee) name — nothing to fix. This check covers accounts categorized as Revenue, including journal entries.${maybeOpen}`}
           caption={`These ${monthLabel} lines hit revenue accounts but name no customer, so customer-level revenue reporting cannot see them. Journal entries and bare deposits are the usual culprits. Fix by opening the transaction in QuickBooks, setting its Customer/Name, then re-syncing.${maybeOpen}`}
@@ -190,7 +192,7 @@ export function Checks({ entries, accountMap, slug, check, closedThrough, qboEnv
       )}
 
       {check === 'missing-recurring' && (
-        <RecurringPanel misses={flagged['missing-recurring']} monthLabel={monthLabel} maybeOpen={maybeOpen} env={qboEnvironment} companyName={companyName} />
+        <RecurringPanel misses={flagged['missing-recurring']} monthLabel={monthLabel} maybeOpen={maybeOpen} env={qboEnvironment} realmId={realmId} companyName={companyName} />
       )}
 
       {check === 'multi-account' && (
@@ -203,6 +205,7 @@ export function Checks({ entries, accountMap, slug, check, closedThrough, qboEnv
           otherKind="Expense"
           flagged={flagged['parent-account']}
           env={qboEnvironment}
+          realmId={realmId}
           companyName={companyName}
           showPayee
           emptyText={`No ${monthLabel} expenses are posted directly to an account that has sub-accounts — everything is coded down to a leaf account.${maybeOpen}`}
@@ -222,12 +225,13 @@ interface TransactionPanelProps {
   emptyText: string;
   caption: string;
   env: QboEnv;
+  realmId: string;
   companyName: string;
   /** Show the payee column (omitted on the missing-payee checks, where it is empty by definition). */
   showPayee?: boolean;
 }
 
-function TransactionPanel({ title, otherKind, flagged, emptyText, caption, showPayee, env, companyName }: TransactionPanelProps) {
+function TransactionPanel({ title, otherKind, flagged, emptyText, caption, showPayee, env, realmId, companyName }: TransactionPanelProps) {
   return (
     <div className="panel">
       <div className="panel-head">
@@ -256,7 +260,7 @@ function TransactionPanel({ title, otherKind, flagged, emptyText, caption, showP
               <tbody>
                 {flagged.map((e, i) => (
                   <tr key={i}>
-                    <td><TxnDate env={env} date={e.date} txn={e} companyName={companyName} /></td>
+                    <td><TxnDate env={env} realmId={realmId} date={e.date} txn={e} companyName={companyName} /></td>
                     <td>{isJournalEntry(e) ? 'JE' : otherKind}</td>
                     <td>{e.transactionType || '—'}</td>
                     {showPayee && <td>{e.vendor || e.name || e.customer || '—'}</td>}
@@ -277,7 +281,7 @@ function TransactionPanel({ title, otherKind, flagged, emptyText, caption, showP
 
 // ---- Missing recurring vendors ------------------------------------------
 
-function RecurringPanel({ misses, monthLabel, maybeOpen, env, companyName }: { misses: RecurringMiss[]; monthLabel: string; maybeOpen: string; env: QboEnv; companyName: string }) {
+function RecurringPanel({ misses, monthLabel, maybeOpen, env, realmId, companyName }: { misses: RecurringMiss[]; monthLabel: string; maybeOpen: string; env: QboEnv; realmId: string; companyName: string }) {
   const typical = (m: RecurringMiss) =>
     m.steady
       ? `~${formatCurrencyExact(m.avgAmount)}/mo`
@@ -318,7 +322,7 @@ function RecurringPanel({ misses, monthLabel, maybeOpen, env, companyName }: { m
                     <td>{typical(m)}</td>
                     <td>{Math.round(m.avgTxns * 10) / 10}</td>
                     <td className="checks-memo">{m.accounts.join(', ')}</td>
-                    <td><TxnDate env={env} date={m.lastSeen} txn={{ transactionType: m.lastSeenType, txnId: m.lastSeenTxnId }} companyName={companyName} /></td>
+                    <td><TxnDate env={env} realmId={realmId} date={m.lastSeen} txn={{ transactionType: m.lastSeenType, txnId: m.lastSeenTxnId }} companyName={companyName} /></td>
                   </tr>
                 ))}
               </tbody>

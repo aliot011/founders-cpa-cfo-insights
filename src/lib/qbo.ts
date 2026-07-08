@@ -36,18 +36,23 @@ function hostFor(environment: 'sandbox' | 'production'): string {
 
 /**
  * Deep link to the transaction in QuickBooks Online, or null when the type
- * has no known edit URL. Opens in the browser's current QBO session, so the
- * user must be signed into (or switch to) the same company — see
- * qboSwitchUrl.
+ * has no known edit URL.
+ *
+ * Routed through the switchCompany endpoint with a chained destination so
+ * the session is forced onto the right company first. If QBO honors the
+ * destination param the user lands on the transaction; if it ignores it,
+ * they land on the right company's homepage — never in the wrong books.
  */
 export function qboTxnUrl(
   environment: 'sandbox' | 'production',
+  realmId: string,
   entry: Pick<LedgerEntry, 'transactionType' | 'txnId'>,
 ): string | null {
   if (!entry.txnId) return null;
   const slug = slugFor(entry.transactionType);
   if (!slug) return null;
-  return `https://${hostFor(environment)}/app/${slug}?txnId=${encodeURIComponent(entry.txnId)}`;
+  const destination = encodeURIComponent(`/app/${slug}?txnId=${entry.txnId}`);
+  return `https://${hostFor(environment)}/app/switchCompany?companyId=${encodeURIComponent(realmId)}&destination=${destination}`;
 }
 
 /**
