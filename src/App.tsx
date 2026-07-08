@@ -26,6 +26,7 @@ function consumeUrlParams(): { client: string | null; connected: boolean; connec
 const EMPTY_DATASET: Omit<ClientDataset, 'companyName'> = {
   entries: [],
   accountMap: {},
+  openingBalances: {},
   startDate: '',
   endDate: '',
   notes: [],

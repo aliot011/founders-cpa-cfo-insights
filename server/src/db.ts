@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS datasets (
   realm_id TEXT PRIMARY KEY REFERENCES connections(realm_id) ON DELETE CASCADE,
   entries_json TEXT NOT NULL,
   account_map_json TEXT NOT NULL,
+  opening_balances_json TEXT NOT NULL DEFAULT '{}',
   start_date TEXT NOT NULL,
   end_date TEXT NOT NULL,
   notes_json TEXT NOT NULL DEFAULT '[]',
@@ -48,7 +49,7 @@ CREATE TABLE IF NOT EXISTS sync_log (
 );
 `);
 
-// Migrate databases created before newer connection columns existed.
+// Migrate databases created before newer columns existed.
 {
   const cols = db.prepare('PRAGMA table_info(connections)').all() as { name: string }[];
   if (!cols.some((c) => c.name === 'accounting_method')) {
@@ -56,6 +57,10 @@ CREATE TABLE IF NOT EXISTS sync_log (
   }
   if (!cols.some((c) => c.name === 'closed_through')) {
     db.exec('ALTER TABLE connections ADD COLUMN closed_through TEXT');
+  }
+  const dsCols = db.prepare('PRAGMA table_info(datasets)').all() as { name: string }[];
+  if (!dsCols.some((c) => c.name === 'opening_balances_json')) {
+    db.exec(`ALTER TABLE datasets ADD COLUMN opening_balances_json TEXT NOT NULL DEFAULT '{}'`);
   }
 }
 
@@ -80,6 +85,7 @@ export interface DatasetRow {
   realm_id: string;
   entries_json: string;
   account_map_json: string;
+  opening_balances_json: string;
   start_date: string;
   end_date: string;
   notes_json: string;
@@ -205,17 +211,19 @@ export function upsertDataset(args: {
   realmId: string;
   entries: LedgerEntry[];
   accountMap: AccountMap;
+  openingBalances: Record<string, number>;
   startDate: string;
   endDate: string;
   notes: string[];
 }): string {
   const lastSyncedAt = new Date().toISOString();
   db.prepare(
-    `INSERT INTO datasets (realm_id, entries_json, account_map_json, start_date, end_date, notes_json, last_synced_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?)
+    `INSERT INTO datasets (realm_id, entries_json, account_map_json, opening_balances_json, start_date, end_date, notes_json, last_synced_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(realm_id) DO UPDATE SET
        entries_json = excluded.entries_json,
        account_map_json = excluded.account_map_json,
+       opening_balances_json = excluded.opening_balances_json,
        start_date = excluded.start_date,
        end_date = excluded.end_date,
        notes_json = excluded.notes_json,
@@ -224,6 +232,7 @@ export function upsertDataset(args: {
     args.realmId,
     JSON.stringify(args.entries),
     JSON.stringify(args.accountMap),
+    JSON.stringify(args.openingBalances),
     args.startDate,
     args.endDate,
     JSON.stringify(args.notes),

@@ -64,7 +64,12 @@ export async function runSync(
 
     const notes: string[] = [];
     const qboAccounts = await fetchAllAccounts(realmId);
-    const { entries, skipped } = await fetchGeneralLedger(realmId, startDate, endDate, conn.accounting_method);
+    const { entries, skipped, openingBalances } = await fetchGeneralLedger(
+      realmId,
+      startDate,
+      endDate,
+      conn.accounting_method,
+    );
 
     // Classify: saved map first, QBO account types for new names, heuristics
     // for report labels that match no Account entity (e.g. renamed accounts).
@@ -86,9 +91,13 @@ export async function runSync(
     if (added.length > 0) {
       notes.push(`Auto-categorized ${added.length} new account(s) — review them in the Accounts tab.`);
     }
-    if (skipped > 0) notes.push(`Skipped ${skipped} non-transaction row(s) (beginning balances etc.).`);
+    const openingCount = Object.keys(openingBalances).length;
+    if (openingCount > 0) {
+      notes.push(`Captured opening balances for ${openingCount} balance-sheet account(s) as of ${startDate}.`);
+    }
+    if (skipped > 0) notes.push(`Skipped ${skipped} non-transaction row(s).`);
 
-    const lastSyncedAt = upsertDataset({ realmId, entries, accountMap: map, startDate, endDate, notes });
+    const lastSyncedAt = upsertDataset({ realmId, entries, accountMap: map, openingBalances, startDate, endDate, notes });
     finishSyncLog(logId, 'success', entries.length, notes.join(' '));
     return { lastSyncedAt, entryCount: entries.length, accountCount: Object.keys(map).length, notes };
   } catch (err) {

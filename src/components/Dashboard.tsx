@@ -45,8 +45,8 @@ export function Dashboard({ dataset, onMapChange, syncTab, initialTab, closedThr
   );
 
   const metrics = useMemo(
-    () => computeMetrics(reportEntries, dataset.accountMap),
-    [reportEntries, dataset.accountMap],
+    () => computeMetrics(reportEntries, dataset.accountMap, dataset.openingBalances),
+    [reportEntries, dataset.accountMap, dataset.openingBalances],
   );
 
   const months = useMemo(() => metrics.map((m) => m.month), [metrics]);
@@ -155,7 +155,12 @@ export function Dashboard({ dataset, onMapChange, syncTab, initialTab, closedThr
           {months.length === 0 && reportEmptyCallout}
           {months.length > 0 && (
             <div className="section">
-              <VarianceAnalysis entries={reportEntries} accountMap={dataset.accountMap} months={months} />
+              <VarianceAnalysis
+                entries={reportEntries}
+                accountMap={dataset.accountMap}
+                openingBalances={dataset.openingBalances}
+                months={months}
+              />
             </div>
           )}
         </>

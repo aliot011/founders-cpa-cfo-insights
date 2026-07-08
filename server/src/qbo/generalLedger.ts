@@ -6,11 +6,17 @@ import type { GeneralLedgerReport, ReportColumn, ReportRow } from './types.ts';
 // GeneralLedger report. `subt_nat_amount` must be requested explicitly — the
 // API returns no amount column otherwise. It is the natural-sign amount;
 // `computeCategorySigns()` in src/lib/metrics.ts normalizes per-category
-// signs downstream, so it is used as-is.
-const REPORT_COLUMNS = 'account_name,tx_date,txn_type,name,memo,vend_name,cust_name,subt_nat_amount';
+// signs downstream, so it is used as-is. `rbal_nat_amount` (running balance)
+// is what carries the value on Beginning Balance rows.
+const REPORT_COLUMNS = 'account_name,tx_date,txn_type,name,memo,vend_name,cust_name,subt_nat_amount,rbal_nat_amount';
 
 export interface TransformResult {
   entries: LedgerEntry[];
+  /**
+   * Per-account balance as of the report's start date, from the Beginning
+   * Balance rows (balance-sheet accounts only, natural sign).
+   */
+  openingBalances: Record<string, number>;
   /** Rows without a usable date/amount (beginning balances etc.). */
   skipped: number;
 }
@@ -24,6 +30,7 @@ interface ColumnIndex {
   vendor: number;
   customer: number;
   amount: number;
+  balance: number;
 }
 
 /**
@@ -52,6 +59,7 @@ function indexColumns(report: GeneralLedgerReport): ColumnIndex {
     vendor: find('vend_name'),
     customer: find('cust_name'),
     amount: find('subt_nat_amount'),
+    balance: find('rbal_nat_amount'),
   };
 }
 
@@ -68,7 +76,7 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
  */
 export function transformReport(report: GeneralLedgerReport): TransformResult {
   const rootRows = report.Rows?.Row ?? [];
-  if (rootRows.length === 0) return { entries: [], skipped: 0 };
+  if (rootRows.length === 0) return { entries: [], openingBalances: {}, skipped: 0 };
 
   const cols = indexColumns(report);
   if (cols.date < 0 || cols.amount < 0) {
@@ -78,6 +86,7 @@ export function transformReport(report: GeneralLedgerReport): TransformResult {
   }
 
   const entries: LedgerEntry[] = [];
+  const openingBalances: Record<string, number> = {};
   let skipped = 0;
 
   const cell = (row: ReportRow, idx: number): string => {
@@ -94,6 +103,13 @@ export function transformReport(report: GeneralLedgerReport): TransformResult {
         const account = cell(row, cols.account) || sectionAccount;
         // Beginning Balance and similar summary-ish data rows have no date.
         if (!DATE_RE.test(date) || !isFinite(amount) || !account) {
+          // Beginning Balance rows carry the account's balance as of the
+          // report start in the running-balance column (account name only in
+          // the enclosing section header).
+          const rawBalance = cell(row, cols.balance).replace(/,/g, '');
+          if (/^beginning balance$/i.test(date) && account && rawBalance !== '' && isFinite(Number(rawBalance))) {
+            openingBalances[account] = (openingBalances[account] ?? 0) + Number(rawBalance);
+          }
           skipped++;
           continue;
         }
@@ -110,14 +126,16 @@ export function transformReport(report: GeneralLedgerReport): TransformResult {
         });
         continue;
       }
-      // Section (or untyped container): recurse with this section's account label.
+      // Section (or untyped container): recurse with this section's account
+      // path (headers carry short names, so nesting builds "Parent:Sub").
       const header = row.Header?.ColData?.[0]?.value?.trim();
-      walk(row.Rows?.Row, header || sectionAccount);
+      const path = header ? (sectionAccount ? `${sectionAccount}:${header}` : header) : sectionAccount;
+      walk(row.Rows?.Row, path);
     }
   };
 
   walk(report.Rows?.Row, '');
-  return { entries, skipped };
+  return { entries, openingBalances, skipped };
 }
 
 function isEmptyReport(report: GeneralLedgerReport): boolean {
@@ -145,7 +163,9 @@ export async function fetchGeneralLedger(
   accountingMethod: AccountingMethod = 'Accrual',
 ): Promise<TransformResult> {
   const entries: LedgerEntry[] = [];
+  const openingBalances: Record<string, number> = {};
   let skipped = 0;
+  let haveOpenings = false;
   for (const chunk of yearChunks(startDate, endDate)) {
     const report = await qboFetch<GeneralLedgerReport>(realmId, '/reports/GeneralLedger', {
       start_date: chunk.start,
@@ -157,6 +177,13 @@ export async function fetchGeneralLedger(
     const result = transformReport(report);
     entries.push(...result.entries);
     skipped += result.skipped;
+    // Openings come from the first chunk that has data: its Beginning Balance
+    // is the balance as of that chunk's start, and no earlier chunk
+    // contributed entries, so the cumulative math stays exact.
+    if (!haveOpenings) {
+      Object.assign(openingBalances, result.openingBalances);
+      haveOpenings = true;
+    }
   }
-  return { entries, skipped };
+  return { entries, openingBalances, skipped };
 }

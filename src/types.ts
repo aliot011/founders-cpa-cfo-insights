@@ -79,6 +79,8 @@ export interface ClientSummary {
 export interface ClientDataset {
   entries: LedgerEntry[];
   accountMap: AccountMap;
+  /** Per-account balance as of startDate (natural sign), from QBO Beginning Balance rows. */
+  openingBalances: Record<string, number>;
   startDate: string;
   endDate: string;
   /** Non-fatal notes from the last sync (new accounts, skipped rows, etc.). */

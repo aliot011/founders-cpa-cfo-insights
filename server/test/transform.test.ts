@@ -16,7 +16,7 @@ test('transformReport flattens data rows across nested sections', () => {
   // Fixture captured from a live sandbox response (pruned): columns are keyed
   // by MetaData ColKey with generic ColTypes, and column order differs from
   // the request.
-  const { entries, skipped } = transformReport(loadFixture('gl-report.sample.json'));
+  const { entries, openingBalances, skipped } = transformReport(loadFixture('gl-report.sample.json'));
 
   assert.equal(entries.length, 12);
   assert.equal(skipped, 1); // the Beginning Balance row
@@ -26,13 +26,16 @@ test('transformReport flattens data rows across nested sections', () => {
     date: '2026-01-06',
     month: '2026-01',
     account: 'Checking',
-    amount: -100,
-    name: 'Tony Rondonuwu',
-    vendor: 'Tony Rondonuwu',
+    amount: -5.66, // natural sign passes through untouched
+    name: "Bob's Burger Joint",
+    vendor: "Bob's Burger Joint",
     customer: undefined,
     memo: undefined,
-    transactionType: 'Check',
+    transactionType: 'Cash Expense',
   });
+
+  // Beginning Balance rows become opening balances keyed by their section.
+  assert.deepEqual(openingBalances, { Checking: 4321.4 });
 
   // Sub-account rows take the fully-qualified path from their own column,
   // and vendor + customer can coexist on one line (billable job expense).
@@ -40,10 +43,6 @@ test('transformReport flattens data rows across nested sections', () => {
   assert.equal(subAccount.length, 3);
   assert.equal(subAccount[1].vendor, 'Norton Lumber and Building Materials');
   assert.equal(subAccount[1].customer, 'Travis Waldron');
-
-  // Natural signs pass through untouched (metrics normalizes downstream).
-  const expense = entries.find((e) => e.name === "Bob's Burger Joint");
-  assert.equal(expense?.amount, -5.66);
 
   // Customer-only income rows keep the customer column.
   const invoice = entries.find((e) => e.transactionType === 'Invoice');

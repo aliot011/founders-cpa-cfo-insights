@@ -79,16 +79,18 @@ function marginLine(key: string, label: string, num1: number, num2: number, rev1
  * Build the two-period variance report.
  *
  * P&L is summarised to totals-only line items. P&L accounts are flows (summed
- * within each period's month range); balance-sheet accounts are stocks (ending
- * balance as of each period's end month, cumulative within the loaded ledger).
- * The absolute cumulative offset cancels in the subtraction, so $ change and
- * cash impact are exact even when the export omits opening balances.
+ * within each period's month range); balance-sheet accounts are stocks: the
+ * account's opening balance (as of the sync start, when available) plus all
+ * ledger activity through each period's end month. Without openings the
+ * cumulative offset still cancels in the subtraction, so $ change and cash
+ * impact stay exact.
  */
 export function computeVariance(
   entries: LedgerEntry[],
   accountMap: AccountMap,
   p1: Period,
   p2: Period,
+  openingBalances: Record<string, number> = {},
 ): VarianceReport {
   const mult = computeCategorySigns(entries, accountMap);
 
@@ -102,14 +104,20 @@ export function computeVariance(
     }
     m.set(e.month, (m.get(e.month) ?? 0) + e.amount);
   }
+  // Accounts with an opening balance but no activity still hold a balance.
+  for (const account of Object.keys(openingBalances)) {
+    if (!perAccount.has(account)) perAccount.set(account, new Map());
+  }
 
   const flow = (months: Map<string, number>, period: Period, sign: number): number => {
     let sum = 0;
     for (const [month, v] of months) if (month >= period.start && month <= period.end) sum += v;
     return sum * sign;
   };
-  const stock = (months: Map<string, number>, period: Period, sign: number): number => {
-    let sum = 0;
+  // Openings share the entries' natural sign convention, so they are summed
+  // before the per-category sign normalization.
+  const stock = (account: string, months: Map<string, number>, period: Period, sign: number): number => {
+    let sum = openingBalances[account] ?? 0;
     for (const [month, v] of months) if (month <= period.end) sum += v;
     return sum * sign;
   };
@@ -127,8 +135,8 @@ export function computeVariance(
       sub[category].p1 += flow(months, p1, sign);
       sub[category].p2 += flow(months, p2, sign);
     } else if (BS_CATEGORIES.includes(category)) {
-      const v1 = stock(months, p1, sign);
-      const v2 = stock(months, p2, sign);
+      const v1 = stock(account, months, p1, sign);
+      const v2 = stock(account, months, p2, sign);
       if (v1 === 0 && v2 === 0) continue;
       const change = v2 - v1;
       const cashImpact = category === 'asset' ? -change : change;

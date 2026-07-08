@@ -147,8 +147,8 @@ export function SyncTab({ client, months, onDataChanged, onDisconnected, onManag
                 Pull transactions from
                 <span className="sync-setting-hint">
                   Leave blank for full company history{client.companyStartDate ? ` (since ${client.companyStartDate})` : ''}.
-                  The Cash metric is a running balance from the first synced transaction, so a later start date will
-                  misstate cash.
+                  Opening balances as of the start date are pulled automatically, so cash and balance-sheet
+                  figures stay correct either way.
                 </span>
               </span>
               <span className="sync-setting-controls">
@@ -162,10 +162,6 @@ export function SyncTab({ client, months, onDataChanged, onDisconnected, onManag
                 </button>
               </span>
             </label>
-            <p className="sync-setting-note">
-              Scheduled automatic refresh isn&rsquo;t available yet — use <em>Sync now</em> whenever you want fresh
-              numbers.
-            </p>
           </div>
         </div>
       </div>

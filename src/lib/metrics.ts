@@ -33,8 +33,16 @@ export function computeCategorySigns(entries: LedgerEntry[], accountMap: Account
 /**
  * Turn normalized ledger entries + an account->category map into a sorted
  * series of monthly metrics.
+ *
+ * `openingBalances` (per-account, natural sign, as of the sync start) seeds
+ * the cash running balance so Cash is the true ending balance even when the
+ * ledger does not go back to the company's first transaction.
  */
-export function computeMetrics(entries: LedgerEntry[], accountMap: AccountMap): MonthlyMetrics[] {
+export function computeMetrics(
+  entries: LedgerEntry[],
+  accountMap: AccountMap,
+  openingBalances: Record<string, number> = {},
+): MonthlyMetrics[] {
   const mult = computeCategorySigns(entries, accountMap);
 
   // Bucket sums per month.
@@ -50,7 +58,12 @@ export function computeMetrics(entries: LedgerEntry[], accountMap: AccountMap): 
   }
 
   const months = [...byMonth.keys()].sort();
-  let cashBalance = 0; // running, debit-positive
+  // Running balance, debit-positive, seeded with the opening balances of
+  // cash-mapped accounts (bank accounts are debit-natural, so no sign flip).
+  let cashBalance = 0;
+  for (const [account, opening] of Object.entries(openingBalances)) {
+    if ((accountMap[account] ?? 'ignore') === 'cash') cashBalance += opening;
+  }
   const out: MonthlyMetrics[] = [];
 
   for (const month of months) {

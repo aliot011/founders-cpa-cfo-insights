@@ -6,6 +6,8 @@ import { formatCurrency, formatMonth, formatPercent, shiftMonth } from '../lib/f
 interface Props {
   entries: LedgerEntry[];
   accountMap: AccountMap;
+  /** Per-account balance as of the sync start (natural sign). */
+  openingBalances?: Record<string, number>;
   months: string[]; // sorted YYYY-MM
 }
 
@@ -47,7 +49,7 @@ function toneClass(value: number | null, upIsGood: boolean): string {
   return good ? 'chg-good' : 'chg-bad';
 }
 
-export function VarianceAnalysis({ entries, accountMap, months }: Props) {
+export function VarianceAnalysis({ entries, accountMap, openingBalances, months }: Props) {
   const last = months[months.length - 1];
   const [gran, setGran] = useState<Granularity>('month');
   const [asOf, setAsOf] = useState(last);
@@ -60,8 +62,8 @@ export function VarianceAnalysis({ entries, accountMap, months }: Props) {
   const p1 = periodFor(priorEnd, gran);
 
   const report = useMemo(
-    () => computeVariance(entries, accountMap, p1, p2),
-    [entries, accountMap, p1.start, p1.end, p2.start, p2.end],
+    () => computeVariance(entries, accountMap, p1, p2, openingBalances),
+    [entries, accountMap, openingBalances, p1.start, p1.end, p2.start, p2.end],
   );
 
   const h1 = periodLabel(priorEnd, gran);
@@ -155,7 +157,8 @@ export function VarianceAnalysis({ entries, accountMap, months }: Props) {
               (negative); an increase in a liability or equity account is a source of cash (positive). For{' '}
               {h2}, Net Income ({formatCurrency(report.netIncomeP2)}) + net B/S cash impact (
               {signed(report.bsCashImpactTotal)}) reconciles to the change in cash (
-              {signed(report.cashActualChange)}). Balance columns are cumulative within the loaded ledger.
+              {signed(report.cashActualChange)}). Balances include each account&rsquo;s opening balance as of
+              the sync start.
             </p>
           </>
         )}
