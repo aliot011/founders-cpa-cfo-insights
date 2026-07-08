@@ -387,10 +387,6 @@ function AdminRoute({ clients, refreshClients }: RouteProps) {
             <div className="section">
               <CompaniesTab
                 clients={clients}
-                onOpen={(realmId) => {
-                  const c = clients.find((x) => x.realmId === realmId);
-                  if (c) navigate(companyPath('client', companySlug(clients, c)));
-                }}
                 onDisconnect={(c) => {
                   if (!confirm(`Disconnect ${c.companyName} from QuickBooks? Its synced data will be removed.`)) return;
                   if (loadLastClient() === c.realmId) clearLastClient();

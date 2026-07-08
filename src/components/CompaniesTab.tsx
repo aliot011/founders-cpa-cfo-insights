@@ -1,15 +1,15 @@
 import { formatMonth } from '../lib/format.ts';
+import { companyPath, companySlug } from '../lib/routes.ts';
 import type { ClientSummary } from '../types.ts';
 
 interface Props {
   clients: ClientSummary[];
   /** The company currently open in the dashboard, if any. */
   currentRealmId?: string;
-  onOpen: (realmId: string) => void;
   onDisconnect: (client: ClientSummary) => void;
 }
 
-export function CompaniesTab({ clients, currentRealmId, onOpen, onDisconnect }: Props) {
+export function CompaniesTab({ clients, currentRealmId, onDisconnect }: Props) {
   return (
     <div className="panel">
       <div className="panel-head">
@@ -46,11 +46,14 @@ export function CompaniesTab({ clients, currentRealmId, onOpen, onDisconnect }: 
                 <td>{c.accountingMethod}</td>
                 <td>{c.closedThrough ? formatMonth(c.closedThrough) : 'Latest'}</td>
                 <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                  {c.realmId !== currentRealmId && (
-                    <button className="btn btn-xs" onClick={() => onOpen(c.realmId)}>
-                      Open
-                    </button>
-                  )}{' '}
+                  <a
+                    className="btn btn-xs"
+                    href={companyPath('client', companySlug(clients, c))}
+                    target="_blank"
+                    rel="noopener"
+                  >
+                    Open
+                  </a>{' '}
                   <button className="btn btn-xs sync-disconnect" onClick={() => onDisconnect(c)}>
                     Disconnect
                   </button>
