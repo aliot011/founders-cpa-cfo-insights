@@ -6,6 +6,7 @@ import { env } from './env.ts';
 import { errorMiddleware } from './errors.ts';
 import { authRouter } from './routes/auth.ts';
 import { clientsRouter } from './routes/clients.ts';
+import { usersRouter } from './routes/users.ts';
 
 const app = express();
 app.use(express.json({ limit: '1mb' }));
@@ -13,6 +14,7 @@ app.use(cookieParser());
 
 app.use('/api/auth', authRouter);
 app.use('/api/clients', clientsRouter);
+app.use('/api/users', usersRouter);
 
 if (process.env.NODE_ENV === 'production') {
   const dist = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../dist');

@@ -5,8 +5,10 @@ import { api, ApiError } from './lib/api';
 import { formatMonth } from './lib/format';
 import { clearLastClient, loadLastClient, saveLastClient } from './lib/storage';
 import { ClientPicker } from './components/ClientPicker';
+import { CompaniesTab } from './components/CompaniesTab';
 import { Dashboard } from './components/Dashboard';
 import { SyncTab } from './components/SyncTab';
+import { UsersTab } from './components/UsersTab';
 import logo from './assets/logo.jpeg';
 
 /** Read and strip the params the OAuth callback redirect appends. */
@@ -194,6 +196,21 @@ export default function App() {
                     onDataChanged={handleDataChanged}
                     onDisconnected={() => handleDisconnected(client.realmId)}
                     onManageClients={() => selectClient(null)}
+                  />
+                }
+                usersTab={<UsersTab clients={clients} />}
+                companiesTab={
+                  <CompaniesTab
+                    clients={clients}
+                    currentRealmId={client.realmId}
+                    onOpen={selectClient}
+                    onDisconnect={(c) => {
+                      if (!confirm(`Disconnect ${c.companyName} from QuickBooks? Its synced data will be removed.`)) return;
+                      api
+                        .disconnect(c.realmId)
+                        .then(() => handleDisconnected(c.realmId))
+                        .catch((err) => setError(err instanceof Error ? err.message : 'Disconnect failed.'));
+                    }}
                   />
                 }
               />

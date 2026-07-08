@@ -60,6 +60,20 @@ export type AccountMap = Record<string, Category>;
 /** QBO report basis used when pulling a client's General Ledger. */
 export type AccountingMethod = 'Accrual' | 'Cash';
 
+/** Access roles. Admins are advisors who can also manage users and companies. */
+export type UserRole = 'admin' | 'advisor' | 'client';
+
+/** An app user (the directory the future sign-in will authenticate against). */
+export interface AppUser {
+  id: number;
+  email: string;
+  name: string;
+  role: UserRole;
+  /** For client users: the companies they can see. Empty for admins/advisors (they see all). */
+  companies: { realmId: string; companyName: string }[];
+  createdAt: string;
+}
+
 /** One connected QuickBooks company, as listed by the API. */
 export interface ClientSummary {
   realmId: string;

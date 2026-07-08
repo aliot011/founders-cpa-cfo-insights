@@ -732,6 +732,31 @@ table.variance .var-net td.metric-name {
   justify-content: flex-end;
 }
 
+/* ---- Users ------------------------------------------------------------- */
+.user-form {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.user-form input,
+.user-form select,
+select.user-role {
+  font-family: inherit;
+  font-size: 13px;
+  padding: 8px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+.user-form input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+select.user-role {
+  padding: 5px 8px;
+}
+
 /* ---- Checks ------------------------------------------------------------ */
 /* Sub-tab bar styled like the main tabs, one size down, with alert counts. */
 .tabs.subtabs {

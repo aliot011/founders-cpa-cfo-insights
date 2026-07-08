@@ -13,18 +13,24 @@ import { Checks } from './Checks';
 interface Props {
   dataset: ClientDataset;
   onMapChange: (map: AccountMap) => void;
-  /** The Sync tab's content, provided by App (it owns client/sync state). */
+  /** Advisor-side tab contents provided by App (it owns client/user state). */
   syncTab: ReactNode;
+  usersTab: ReactNode;
+  companiesTab: ReactNode;
   initialTab?: TabId;
   /** Most recent closed month (YYYY-MM); reporting tabs stop here. Null = latest. */
   closedThrough?: string | null;
 }
 
-export type TabId = 'summary' | 'kpis' | 'detail' | 'variance' | 'vendors' | 'checks' | 'accounts' | 'sync';
+export type TabId =
+  | 'summary' | 'kpis' | 'detail' | 'variance' | 'vendors'
+  | 'checks' | 'accounts' | 'sync' | 'users' | 'companies';
 
 /** The two sides of the app: what a client sees vs. the advisor's workbench. */
 type Side = 'client' | 'advisor';
 
+// Users and Companies are the admin tabs — visible to everyone until
+// sign-in exists to tell admins from advisors.
 const SIDE_TABS: Record<Side, { id: TabId; label: string }[]> = {
   client: [
     { id: 'summary', label: 'Summary' },
@@ -37,13 +43,15 @@ const SIDE_TABS: Record<Side, { id: TabId; label: string }[]> = {
     { id: 'checks', label: 'Checks' },
     { id: 'accounts', label: 'Accounts' },
     { id: 'sync', label: 'Sync' },
+    { id: 'users', label: 'Users' },
+    { id: 'companies', label: 'Companies' },
   ],
 };
 
 const sideOf = (tab: TabId): Side =>
   SIDE_TABS.client.some((t) => t.id === tab) ? 'client' : 'advisor';
 
-export function Dashboard({ dataset, onMapChange, syncTab, initialTab, closedThrough }: Props) {
+export function Dashboard({ dataset, onMapChange, syncTab, usersTab, companiesTab, initialTab, closedThrough }: Props) {
   const [side, setSide] = useState<Side>(initialTab ? sideOf(initialTab) : 'client');
   // Each side remembers its own active tab.
   const [tabBySide, setTabBySide] = useState<Record<Side, TabId>>({
@@ -249,6 +257,26 @@ export function Dashboard({ dataset, onMapChange, syncTab, initialTab, closedThr
             subtitle="Pull the latest General Ledger from QuickBooks whenever you want fresh numbers, adjust the date range, and review past syncs."
           />
           {syncTab}
+        </>
+      )}
+
+      {tab === 'users' && (
+        <>
+          <PageHeader
+            title="Users"
+            subtitle="Who can access Advisory Intelligence: admins run the practice, advisors work every company, and client users see only their own companies' reports."
+          />
+          <div className="section">{usersTab}</div>
+        </>
+      )}
+
+      {tab === 'companies' && (
+        <>
+          <PageHeader
+            title="Companies"
+            subtitle="Every QuickBooks company connected to the practice — open one, connect another, or disconnect one you no longer serve."
+          />
+          <div className="section">{companiesTab}</div>
         </>
       )}
     </>

@@ -1,4 +1,13 @@
-import type { AccountingMethod, AccountMap, ClientDataset, ClientSummary, SyncLogEntry, SyncResult } from '../types.ts';
+import type {
+  AccountingMethod,
+  AccountMap,
+  AppUser,
+  ClientDataset,
+  ClientSummary,
+  SyncLogEntry,
+  SyncResult,
+  UserRole,
+} from '../types.ts';
 
 export type ApiErrorCode = 'needs_reauth' | 'not_found' | 'qbo_error' | 'sync_in_progress' | 'bad_request';
 
@@ -57,4 +66,14 @@ export const api = {
 
   disconnect: (realmId: string) =>
     request<{ ok: true }>(`/clients/${encodeURIComponent(realmId)}`, { method: 'DELETE' }),
+
+  listUsers: () => request<AppUser[]>('/users'),
+
+  createUser: (user: { email: string; name: string; role: UserRole; realmIds?: string[] }) =>
+    request<AppUser>('/users', { method: 'POST', body: JSON.stringify(user) }),
+
+  updateUser: (id: number, fields: { name?: string; role?: UserRole; realmIds?: string[] }) =>
+    request<AppUser>(`/users/${id}`, { method: 'PUT', body: JSON.stringify(fields) }),
+
+  deleteUser: (id: number) => request<{ ok: true }>(`/users/${id}`, { method: 'DELETE' }),
 };

@@ -49,6 +49,29 @@ CREATE TABLE IF NOT EXISTS sync_log (
 );
 `);
 
+// Pre-release users table briefly had a single realm_id column; recreate
+// with the many-to-many shape (it never held data).
+{
+  const uCols = db.prepare('PRAGMA table_info(users)').all() as { name: string }[];
+  if (uCols.some((c) => c.name === 'realm_id')) db.exec('DROP TABLE users');
+}
+
+db.exec(`
+CREATE TABLE IF NOT EXISTS users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  email TEXT NOT NULL UNIQUE COLLATE NOCASE,
+  name TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('admin', 'advisor', 'client')),
+  created_at TEXT NOT NULL
+);
+-- Client users are scoped to these companies; admins/advisors see all.
+CREATE TABLE IF NOT EXISTS user_companies (
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  realm_id TEXT NOT NULL REFERENCES connections(realm_id) ON DELETE CASCADE,
+  PRIMARY KEY (user_id, realm_id)
+);
+`);
+
 // Migrate databases created before newer columns existed.
 {
   const cols = db.prepare('PRAGMA table_info(connections)').all() as { name: string }[];
@@ -197,6 +220,82 @@ export function setClosedThrough(realmId: string, closedThrough: string | null):
     new Date().toISOString(),
     realmId,
   );
+}
+
+// ---- Users ------------------------------------------------------------
+
+export type UserRole = 'admin' | 'advisor' | 'client';
+
+export interface UserRow {
+  id: number;
+  email: string;
+  name: string;
+  role: UserRole;
+  created_at: string;
+}
+
+export interface UserCompany {
+  realm_id: string;
+  company_name: string;
+}
+
+function companiesFor(userId: number): UserCompany[] {
+  return db
+    .prepare(
+      `SELECT uc.realm_id, c.company_name FROM user_companies uc
+       JOIN connections c ON c.realm_id = uc.realm_id
+       WHERE uc.user_id = ? ORDER BY c.company_name COLLATE NOCASE`,
+    )
+    .all(userId) as UserCompany[];
+}
+
+export function listUsers(): (UserRow & { companies: UserCompany[] })[] {
+  const rows = db.prepare('SELECT * FROM users ORDER BY role, name COLLATE NOCASE').all() as UserRow[];
+  return rows.map((u) => ({ ...u, companies: companiesFor(u.id) }));
+}
+
+export function getUser(id: number): (UserRow & { companies: UserCompany[] }) | undefined {
+  const row = db.prepare('SELECT * FROM users WHERE id = ?').get(id) as UserRow | undefined;
+  return row ? { ...row, companies: companiesFor(row.id) } : undefined;
+}
+
+const setCompanies = db.transaction((userId: number, realmIds: string[]) => {
+  db.prepare('DELETE FROM user_companies WHERE user_id = ?').run(userId);
+  const insert = db.prepare('INSERT INTO user_companies (user_id, realm_id) VALUES (?, ?)');
+  for (const realmId of realmIds) insert.run(userId, realmId);
+});
+
+export function createUser(args: {
+  email: string;
+  name: string;
+  role: UserRole;
+  realmIds: string[];
+}): UserRow & { companies: UserCompany[] } {
+  const result = db
+    .prepare('INSERT INTO users (email, name, role, created_at) VALUES (?, ?, ?, ?)')
+    .run(args.email, args.name, args.role, new Date().toISOString());
+  const id = Number(result.lastInsertRowid);
+  setCompanies(id, args.realmIds);
+  return getUser(id)!;
+}
+
+export function updateUser(
+  id: number,
+  fields: { name?: string; role?: UserRole; realmIds?: string[] },
+): UserRow & { companies: UserCompany[] } {
+  const current = getUser(id);
+  if (!current) throw new Error(`No user ${id}`);
+  db.prepare('UPDATE users SET name = ?, role = ? WHERE id = ?').run(
+    fields.name ?? current.name,
+    fields.role ?? current.role,
+    id,
+  );
+  if (fields.realmIds !== undefined) setCompanies(id, fields.realmIds);
+  return getUser(id)!;
+}
+
+export function deleteUser(id: number): void {
+  db.prepare('DELETE FROM users WHERE id = ?').run(id);
 }
 
 export function deleteConnection(realmId: string): void {
