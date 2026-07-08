@@ -75,7 +75,7 @@ export function AccountMapping({ entries, accountMap, onChange, open }: Props) {
             onChange={(e) => setQuery(e.target.value)}
           />
         </div>
-        <div className="table-scroll" style={{ maxHeight: 460, overflowY: 'auto' }}>
+        <div className="table-scroll">
           <table className="mapping">
             <thead>
               <tr>
