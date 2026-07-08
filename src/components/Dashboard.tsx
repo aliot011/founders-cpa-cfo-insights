@@ -26,11 +26,13 @@ export type TabId =
   | 'summary' | 'kpis' | 'detail' | 'variance' | 'vendors'
   | 'checks' | 'accounts' | 'sync' | 'users' | 'companies';
 
-/** The two sides of the app: what a client sees vs. the advisor's workbench. */
-type Side = 'client' | 'advisor';
+/**
+ * The three portals: what a client sees, the advisor's workbench, and
+ * practice administration. All are visible to everyone until sign-in
+ * exists to tell the roles apart.
+ */
+type Side = 'client' | 'advisor' | 'admin';
 
-// Users and Companies are the admin tabs — visible to everyone until
-// sign-in exists to tell admins from advisors.
 const SIDE_TABS: Record<Side, { id: TabId; label: string }[]> = {
   client: [
     { id: 'summary', label: 'Summary' },
@@ -43,13 +45,21 @@ const SIDE_TABS: Record<Side, { id: TabId; label: string }[]> = {
     { id: 'checks', label: 'Checks' },
     { id: 'accounts', label: 'Accounts' },
     { id: 'sync', label: 'Sync' },
+  ],
+  admin: [
     { id: 'users', label: 'Users' },
     { id: 'companies', label: 'Companies' },
   ],
 };
 
+const SIDES: { id: Side; label: string }[] = [
+  { id: 'client', label: 'Client' },
+  { id: 'advisor', label: 'Advisor' },
+  { id: 'admin', label: 'Admin' },
+];
+
 const sideOf = (tab: TabId): Side =>
-  SIDE_TABS.client.some((t) => t.id === tab) ? 'client' : 'advisor';
+  (Object.keys(SIDE_TABS) as Side[]).find((s) => SIDE_TABS[s].some((t) => t.id === tab)) ?? 'client';
 
 export function Dashboard({ dataset, onMapChange, syncTab, usersTab, companiesTab, initialTab, closedThrough }: Props) {
   const [side, setSide] = useState<Side>(initialTab ? sideOf(initialTab) : 'client');
@@ -57,6 +67,7 @@ export function Dashboard({ dataset, onMapChange, syncTab, usersTab, companiesTa
   const [tabBySide, setTabBySide] = useState<Record<Side, TabId>>({
     client: initialTab && sideOf(initialTab) === 'client' ? initialTab : 'summary',
     advisor: initialTab && sideOf(initialTab) === 'advisor' ? initialTab : 'checks',
+    admin: initialTab && sideOf(initialTab) === 'admin' ? initialTab : 'users',
   });
   const tab = tabBySide[side];
   const setTab = (t: TabId) => setTabBySide((prev) => ({ ...prev, [side]: t }));
@@ -112,9 +123,9 @@ export function Dashboard({ dataset, onMapChange, syncTab, usersTab, companiesTa
         ))}
         <div className="tabs-meta">
           <div className="seg" role="group" aria-label="Portal">
-            {(['client', 'advisor'] as Side[]).map((s) => (
-              <button key={s} className={side === s ? 'active' : ''} onClick={() => setSide(s)}>
-                {s === 'client' ? 'Client' : 'Advisor'}
+            {SIDES.map((s) => (
+              <button key={s.id} className={side === s.id ? 'active' : ''} onClick={() => setSide(s.id)}>
+                {s.label}
               </button>
             ))}
           </div>
