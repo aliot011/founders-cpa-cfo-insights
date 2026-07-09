@@ -1182,9 +1182,6 @@ details.collapse > summary::-webkit-details-marker {
 .vendor-pivot .panel-head h3 {
   color: #fff;
 }
-.vendor-pivot .panel-head .muted {
-  color: rgba(255, 255, 255, 0.78);
-}
 .vendor-pivot table.metrics thead th,
 .vendor-pivot table.metrics thead th.metric-name,
 .vendor-pivot table.detail thead th.col-total {

@@ -418,9 +418,6 @@ function MultiAccountPanel({ vendors, monthLabel }: { vendors: MultiAccountVendo
         <div className="panel check-vendor-section vendor-pivot" key={v.vendor}>
           <div className="panel-head">
             <h3>{v.vendor}</h3>
-            <span className="muted" style={{ fontSize: 13 }}>
-              {v.rows.length} accounts · {formatCurrency(v.total)}
-            </span>
           </div>
           <div className="table-scroll">
             <table className="metrics detail num">
