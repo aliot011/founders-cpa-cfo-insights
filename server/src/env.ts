@@ -19,7 +19,13 @@ function required(name: string): string {
 export const env: Env = {
   QBO_CLIENT_ID: required('QBO_CLIENT_ID'),
   QBO_CLIENT_SECRET: required('QBO_CLIENT_SECRET'),
-  QBO_REDIRECT_URI: required('QBO_REDIRECT_URI'),
+  // On Render, RENDER_EXTERNAL_URL is the service's https URL; register
+  // <url>/api/auth/callback as a redirect URI on the Intuit app.
+  QBO_REDIRECT_URI:
+    process.env.QBO_REDIRECT_URI ??
+    (process.env.RENDER_EXTERNAL_URL
+      ? `${process.env.RENDER_EXTERNAL_URL}/api/auth/callback`
+      : required('QBO_REDIRECT_URI')),
   QBO_ENVIRONMENT: (() => {
     const v = process.env.QBO_ENVIRONMENT ?? 'sandbox';
     if (v !== 'sandbox' && v !== 'production') {

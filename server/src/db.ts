@@ -5,7 +5,8 @@ import { fileURLToPath } from 'node:url';
 import type { AccountingMethod, AccountMap, LedgerEntry, VendorProfile } from '../../src/types.ts';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const dataDir = path.join(repoRoot, 'data');
+// DATA_DIR points at the persistent disk in hosted environments.
+const dataDir = process.env.DATA_DIR ?? path.join(repoRoot, 'data');
 mkdirSync(dataDir, { recursive: true });
 
 export const db = new Database(path.join(dataDir, 'app.db'));

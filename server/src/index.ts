@@ -12,6 +12,21 @@ const app = express();
 app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());
 
+// Interim gate until real sign-in exists: when BASIC_AUTH_PASSWORD is set,
+// everything (app, API, OAuth callback) requires it. Any username works.
+const basicAuthPassword = process.env.BASIC_AUTH_PASSWORD;
+if (basicAuthPassword) {
+  app.use((req, res, next) => {
+    const [scheme, encoded] = (req.headers.authorization ?? '').split(' ');
+    if (scheme === 'Basic' && encoded) {
+      const password = Buffer.from(encoded, 'base64').toString().split(':').slice(1).join(':');
+      if (password === basicAuthPassword) return next();
+    }
+    res.set('WWW-Authenticate', 'Basic realm="Advisory Intelligence"');
+    res.status(401).send('Authentication required');
+  });
+}
+
 app.use('/api/auth', authRouter);
 app.use('/api/clients', clientsRouter);
 app.use('/api/users', usersRouter);

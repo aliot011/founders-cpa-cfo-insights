@@ -1,0 +1,27 @@
+# Render Blueprint: one web service running the API + built SPA, with a
+# persistent disk for the SQLite database (QBO tokens + synced datasets).
+services:
+  - type: web
+    name: advisory-intelligence
+    runtime: node
+    plan: starter
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm run start
+    autoDeploy: true
+    disk:
+      name: data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_VERSION
+        value: '22'
+      - key: DATA_DIR
+        value: /var/data
+      - key: QBO_ENVIRONMENT
+        value: sandbox
+      - key: QBO_CLIENT_ID
+        sync: false
+      - key: QBO_CLIENT_SECRET
+        sync: false
+      - key: BASIC_AUTH_PASSWORD
+        generateValue: true
