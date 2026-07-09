@@ -145,21 +145,9 @@ export default function App() {
 
 // ---- Topbar -----------------------------------------------------------
 
-interface TopBarProps {
-  clients?: ClientSummary[];
-  client?: ClientSummary | null;
-  /** Latest synced month (YYYY-MM), for the closed-through fallback label. */
-  latestMonth?: string | null;
-  /** Current portal + tab segment, so switching companies keeps the view. */
-  side?: 'client' | 'advisor';
-  segment?: string;
-}
-
-function TopBar({ clients, client, latestMonth, side, segment }: TopBarProps) {
+function TopBar() {
   const navigate = useNavigate();
   const { user, signOut } = useSession();
-  const [switcherOpen, setSwitcherOpen] = useState(false);
-  const closedMonth = client ? (client.closedThrough ?? latestMonth ?? null) : null;
 
   return (
     <header className="topbar">
@@ -167,19 +155,6 @@ function TopBar({ clients, client, latestMonth, side, segment }: TopBarProps) {
         <img className="brand-mark" src={logo} alt="Startup Accounting Advisors" />
         <div>
           <div className="brand-title">Advisory Intelligence</div>
-          {client && clients && (
-            <div className="brand-client">
-              <span className="topbar-client-name">{client.companyName}</span>
-              <span className="topbar-closed">
-                {closedMonth ? `Closed through ${formatMonth(closedMonth)}` : 'Not synced yet'}
-              </span>
-              {clients.length > 1 && (
-                <button className="link-btn" onClick={() => setSwitcherOpen(true)}>
-                  Switch company
-                </button>
-              )}
-            </div>
-          )}
         </div>
       </div>
       {user && (
@@ -192,18 +167,51 @@ function TopBar({ clients, client, latestMonth, side, segment }: TopBarProps) {
           Log out
         </button>
       )}
-      {switcherOpen && client && clients && (
+    </header>
+  );
+}
+
+/** Stacked company context shown in the body, above the tab bar. */
+function CompanyContext({
+  clients,
+  client,
+  latestMonth,
+  side,
+  segment,
+}: {
+  clients: ClientSummary[];
+  client: ClientSummary;
+  latestMonth: string | null;
+  side: 'client' | 'advisor';
+  segment?: string;
+}) {
+  const navigate = useNavigate();
+  const [switcherOpen, setSwitcherOpen] = useState(false);
+  const closedMonth = client.closedThrough ?? latestMonth;
+
+  return (
+    <div className="company-context">
+      <span className="company-context-name">{client.companyName}</span>
+      <span className="topbar-closed">
+        {closedMonth ? `Closed through ${formatMonth(closedMonth)}` : 'Not synced yet'}
+      </span>
+      {clients.length > 1 && (
+        <button className="link-btn" onClick={() => setSwitcherOpen(true)}>
+          Switch company
+        </button>
+      )}
+      {switcherOpen && (
         <CompanySwitchModal
           clients={clients}
           currentRealmId={client.realmId}
           onSelect={(realmId) => {
             const next = clients.find((c) => c.realmId === realmId);
-            if (next) navigate(companyPath(side ?? 'client', companySlug(clients, next), segment));
+            if (next) navigate(companyPath(side, companySlug(clients, next), segment));
           }}
           onClose={() => setSwitcherOpen(false)}
         />
       )}
-    </header>
+    </div>
   );
 }
 
@@ -366,14 +374,15 @@ function CompanyRoute({ side, clients, refreshClients }: RouteProps & { side: 'c
 
   return (
     <div className="app">
-      <TopBar
-        clients={clients}
-        client={client}
-        latestMonth={syncedMonths[syncedMonths.length - 1] ?? null}
-        side={side}
-        segment={params.sub ? `${params.tab}/${params.sub}` : params.tab}
-      />
+      <TopBar />
       <main className="content">
+        <CompanyContext
+          clients={clients}
+          client={client}
+          latestMonth={syncedMonths[syncedMonths.length - 1] ?? null}
+          side={side}
+          segment={params.sub ? `${params.tab}/${params.sub}` : params.tab}
+        />
         {error && <div className="upload-error sync-error">{error}</div>}
         {loading && !dataset && !neverSynced ? (
           <p className="app-loading">Loading {client.companyName}…</p>
