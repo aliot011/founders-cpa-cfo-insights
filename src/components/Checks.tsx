@@ -415,7 +415,7 @@ function MultiAccountPanel({ vendors, monthLabel }: { vendors: MultiAccountVendo
         ones to fix are those bouncing between similar accounts month to month.
       </p>
       {vendors.map((v) => (
-        <div className="panel check-vendor-section" key={v.vendor}>
+        <div className="panel check-vendor-section vendor-pivot" key={v.vendor}>
           <div className="panel-head">
             <h3>{v.vendor}</h3>
             <span className="muted" style={{ fontSize: 13 }}>

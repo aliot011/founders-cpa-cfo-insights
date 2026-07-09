@@ -1173,3 +1173,22 @@ details.collapse > summary::-webkit-details-marker {
 .check-menu-item.has-alerts:hover {
   background: #f9dcd6;
 }
+
+/* Multi-account vendor sections: navy vendor header, light-grey column row. */
+.vendor-pivot .panel-head {
+  background: var(--navy);
+  border-bottom-color: var(--navy);
+}
+.vendor-pivot .panel-head h3 {
+  color: #fff;
+}
+.vendor-pivot .panel-head .muted {
+  color: rgba(255, 255, 255, 0.78);
+}
+.vendor-pivot table.metrics thead th,
+.vendor-pivot table.metrics thead th.metric-name,
+.vendor-pivot table.detail thead th.col-total {
+  background: var(--line);
+  color: var(--ink);
+  border-bottom: 1px solid var(--line-strong);
+}
