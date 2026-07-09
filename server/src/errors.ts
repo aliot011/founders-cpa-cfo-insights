@@ -1,6 +1,13 @@
 import type { NextFunction, Request, Response } from 'express';
 
-export type ApiErrorCode = 'needs_reauth' | 'not_found' | 'qbo_error' | 'sync_in_progress' | 'bad_request';
+export type ApiErrorCode =
+  | 'needs_reauth'
+  | 'not_found'
+  | 'qbo_error'
+  | 'sync_in_progress'
+  | 'bad_request'
+  | 'unauthorized'
+  | 'forbidden';
 
 export class ApiError extends Error {
   status: number;

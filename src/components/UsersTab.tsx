@@ -22,6 +22,21 @@ export function UsersTab({ clients }: Props) {
   const [role, setRole] = useState<UserRole>('client');
   const [realmIds, setRealmIds] = useState<Set<string>>(new Set());
   const [adding, setAdding] = useState(false);
+  const [lastLink, setLastLink] = useState<{ email: string; url: string } | null>(null);
+  const [copiedId, setCopiedId] = useState<number | null>(null);
+
+  async function copyLink(user: AppUser, kind: 'invite' | 'reset') {
+    setError(null);
+    try {
+      const { url } = kind === 'invite' ? await api.inviteLink(user.id) : await api.resetLink(user.id);
+      await navigator.clipboard.writeText(url).catch(() => {});
+      setLastLink({ email: user.email, url });
+      setCopiedId(user.id);
+      window.setTimeout(() => setCopiedId(null), 2500);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not create the link.');
+    }
+  }
 
   function refresh() {
     api.listUsers().then(setUsers).catch((err) => setError(err.message));
@@ -32,7 +47,9 @@ export function UsersTab({ clients }: Props) {
     setAdding(true);
     setError(null);
     try {
-      await api.createUser({ name, email, role, realmIds: [...realmIds] });
+      const created = await api.createUser({ name, email, role, realmIds: [...realmIds] });
+      setLastLink({ email: created.email, url: created.inviteUrl });
+      await navigator.clipboard.writeText(created.inviteUrl).catch(() => {});
       setName('');
       setEmail('');
       setRealmIds(new Set());
@@ -109,6 +126,15 @@ export function UsersTab({ clients }: Props) {
           </button>
         </div>
 
+        {lastLink && (
+          <div className="invite-box">
+            <span>
+              Set-password link for <strong>{lastLink.email}</strong> (copied to clipboard; send it to them):
+            </span>
+            <input readOnly value={lastLink.url} onFocus={(e) => e.target.select()} />
+          </div>
+        )}
+
         {users && users.length > 0 && (
           <div className="table-scroll" style={{ marginTop: 16 }}>
             <table className="metrics checks">
@@ -118,6 +144,7 @@ export function UsersTab({ clients }: Props) {
                   <th>Email</th>
                   <th>Role</th>
                   <th>Companies</th>
+                  <th>Status</th>
                   <th></th>
                 </tr>
               </thead>
@@ -153,7 +180,13 @@ export function UsersTab({ clients }: Props) {
                         <span className="muted">All companies</span>
                       )}
                     </td>
-                    <td style={{ textAlign: 'right' }}>
+                    <td>
+                      <span className="muted">{u.hasPassword ? 'Active' : 'Invited'}</span>
+                    </td>
+                    <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      <button className="btn btn-xs" onClick={() => copyLink(u, u.hasPassword ? 'reset' : 'invite')}>
+                        {copiedId === u.id ? 'Copied!' : u.hasPassword ? 'Copy reset link' : 'Copy invite link'}
+                      </button>{' '}
                       <button className="btn btn-xs sync-disconnect" onClick={() => handleDelete(u)}>
                         Remove
                       </button>

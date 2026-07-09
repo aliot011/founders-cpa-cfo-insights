@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, type Request } from 'express';
 import type { AccountingMethod, AccountMap } from '../../../src/types.ts';
 import {
   deleteConnection,
@@ -11,10 +11,27 @@ import {
   setClosedThrough,
   setSyncStartDate,
 } from '../db.ts';
+import { requireRole } from '../auth.ts';
+import { getUserCompanyRealms } from '../db.ts';
 import { env } from '../env.ts';
 import { ApiError } from '../errors.ts';
 import { revoke } from '../qbo/oauth.ts';
 import { runSync } from '../sync.ts';
+
+/** Client users only see their scoped companies; other roles see all. */
+function allowedRealms(req: Request): Set<string> | null {
+  return req.user!.role === 'client' ? getUserCompanyRealms(req.user!.id) : null;
+}
+
+function requireCompanyAccess(req: Request, realmId: string): void {
+  const allowed = allowedRealms(req);
+  if (allowed && !allowed.has(realmId)) {
+    throw new ApiError(403, 'Not allowed.', 'forbidden');
+  }
+}
+
+/** Advisors and admins only (mutating / operational routes). */
+const advisorOnly = requireRole('admin', 'advisor');
 
 export const clientsRouter = Router();
 
@@ -26,9 +43,12 @@ function requireConnection(realmId: string) {
   return conn;
 }
 
-clientsRouter.get('/', (_req, res) => {
+clientsRouter.get('/', (req, res) => {
+  const allowed = allowedRealms(req);
   res.json(
-    listConnections().map((c) => ({
+    listConnections()
+      .filter((c) => !allowed || allowed.has(c.realm_id))
+      .map((c) => ({
       realmId: c.realm_id,
       companyName: c.company_name,
       status: c.status,
@@ -38,25 +58,27 @@ clientsRouter.get('/', (_req, res) => {
       companyStartDate: c.company_start_date,
       accountingMethod: c.accounting_method,
       closedThrough: c.closed_through,
-    })),
+      })),
   );
 });
 
-clientsRouter.post('/:realmId/sync', async (req, res, next) => {
+clientsRouter.post('/:realmId/sync', advisorOnly, async (req, res, next) => {
   try {
+    const realmId = String(req.params.realmId);
     const { startDate, endDate } = (req.body ?? {}) as { startDate?: string; endDate?: string };
     for (const [label, value] of [['startDate', startDate], ['endDate', endDate]] as const) {
       if (value !== undefined && !DATE_RE.test(value)) {
         throw new ApiError(400, `${label} must be YYYY-MM-DD.`, 'bad_request');
       }
     }
-    res.json(await runSync(req.params.realmId, { startDate, endDate }));
+    res.json(await runSync(realmId, { startDate, endDate }));
   } catch (err) {
     next(err);
   }
 });
 
 clientsRouter.get('/:realmId/dataset', (req, res) => {
+  requireCompanyAccess(req, req.params.realmId);
   const conn = requireConnection(req.params.realmId);
   const ds = getDataset(req.params.realmId);
   if (!ds) throw new ApiError(404, `${conn.company_name} has not been synced yet.`, 'not_found');
@@ -74,24 +96,26 @@ clientsRouter.get('/:realmId/dataset', (req, res) => {
   });
 });
 
-clientsRouter.put('/:realmId/account-map', (req, res) => {
-  requireConnection(req.params.realmId);
+clientsRouter.put('/:realmId/account-map', advisorOnly, (req, res) => {
+  const realmId = String(req.params.realmId);
+  requireConnection(realmId);
   const { accountMap } = (req.body ?? {}) as { accountMap?: AccountMap };
   if (!accountMap || typeof accountMap !== 'object') {
     throw new ApiError(400, 'Body must include an accountMap object.', 'bad_request');
   }
-  if (!getDataset(req.params.realmId)) {
+  if (!getDataset(realmId)) {
     throw new ApiError(404, 'Sync this client before editing its account map.', 'not_found');
   }
-  saveAccountMap(req.params.realmId, accountMap);
+  saveAccountMap(realmId, accountMap);
   res.json({ ok: true });
 });
 
-clientsRouter.get('/:realmId/sync-log', (req, res) => {
-  requireConnection(req.params.realmId);
+clientsRouter.get('/:realmId/sync-log', advisorOnly, (req, res) => {
+  const realmId = String(req.params.realmId);
+  requireConnection(realmId);
   const limit = Math.min(Number(req.query.limit ?? 20) || 20, 100);
   res.json(
-    listSyncLog(req.params.realmId, limit).map((row) => ({
+    listSyncLog(realmId, limit).map((row) => ({
       id: row.id,
       startedAt: row.started_at,
       finishedAt: row.finished_at,
@@ -104,8 +128,9 @@ clientsRouter.get('/:realmId/sync-log', (req, res) => {
 
 const MONTH_RE = /^\d{4}-\d{2}$/;
 
-clientsRouter.put('/:realmId/settings', (req, res) => {
-  requireConnection(req.params.realmId);
+clientsRouter.put('/:realmId/settings', advisorOnly, (req, res) => {
+  const realmId = String(req.params.realmId);
+  requireConnection(realmId);
   const body = (req.body ?? {}) as {
     syncStartDate?: string | null;
     accountingMethod?: AccountingMethod;
@@ -115,26 +140,27 @@ clientsRouter.put('/:realmId/settings', (req, res) => {
     if (body.syncStartDate != null && !DATE_RE.test(body.syncStartDate)) {
       throw new ApiError(400, 'syncStartDate must be YYYY-MM-DD or null.', 'bad_request');
     }
-    setSyncStartDate(req.params.realmId, body.syncStartDate ?? null);
+    setSyncStartDate(realmId, body.syncStartDate ?? null);
   }
   if ('accountingMethod' in body) {
     if (body.accountingMethod !== 'Accrual' && body.accountingMethod !== 'Cash') {
       throw new ApiError(400, "accountingMethod must be 'Accrual' or 'Cash'.", 'bad_request');
     }
-    setAccountingMethod(req.params.realmId, body.accountingMethod);
+    setAccountingMethod(realmId, body.accountingMethod);
   }
   if ('closedThrough' in body) {
     if (body.closedThrough != null && !MONTH_RE.test(body.closedThrough)) {
       throw new ApiError(400, 'closedThrough must be YYYY-MM or null.', 'bad_request');
     }
-    setClosedThrough(req.params.realmId, body.closedThrough ?? null);
+    setClosedThrough(realmId, body.closedThrough ?? null);
   }
   res.json({ ok: true });
 });
 
-clientsRouter.delete('/:realmId', async (req, res) => {
-  const conn = requireConnection(req.params.realmId);
+clientsRouter.delete('/:realmId', requireRole('admin'), async (req, res) => {
+  const realmId = String(req.params.realmId);
+  const conn = requireConnection(realmId);
   await revoke(conn.refresh_token);
-  deleteConnection(req.params.realmId); // cascades to datasets; sync_log kept
+  deleteConnection(realmId); // cascades to datasets; sync_log kept
   res.json({ ok: true });
 });

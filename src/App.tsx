@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Navigate, Route, Routes, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import './App.css';
 import type { AccountMap, ClientDataset, ClientSummary } from './types';
 import { api, ApiError } from './lib/api';
@@ -15,7 +15,9 @@ import {
   tabForSegment,
   type Side,
 } from './lib/routes';
+import { useSession } from './lib/session.tsx';
 import { clearLastClient, loadLastClient, saveLastClient } from './lib/storage';
+import { ChangePasswordPage, ForgotPasswordPage, LoginPage, SetPasswordPage } from './components/AuthPages';
 import { ClientPicker } from './components/ClientPicker';
 import { CompaniesTab } from './components/CompaniesTab';
 import { CompanySwitchModal } from './components/CompanySwitchModal';
@@ -39,21 +41,65 @@ const EMPTY_DATASET: Omit<ClientDataset, 'companyName'> = {
 /** One-shot boot flags (reset on full page load, survive route changes). */
 let bootRedirectDone = false;
 
+function LoginRedirect() {
+  const location = useLocation();
+  const next = encodeURIComponent(location.pathname + location.search);
+  return <Navigate to={`/login?next=${next}`} replace />;
+}
+
 export default function App() {
+  const { user, loading, setUser } = useSession();
   const [clients, setClients] = useState<ClientSummary[] | null>(null);
   const [listError, setListError] = useState<string | null>(null);
 
   const refreshClients = useCallback(async (): Promise<ClientSummary[]> => {
-    const list = await api.listClients();
-    setClients(list);
-    return list;
-  }, []);
+    try {
+      const list = await api.listClients();
+      setClients(list);
+      return list;
+    } catch (err) {
+      // A dead session anywhere sends the user back to sign in.
+      if (err instanceof ApiError && err.status === 401) setUser(null);
+      throw err;
+    }
+  }, [setUser]);
 
   useEffect(() => {
+    if (!user) {
+      setClients(null);
+      return;
+    }
     refreshClients().catch((err) =>
       setListError(err instanceof Error ? err.message : 'Could not reach the API server.'),
     );
-  }, [refreshClients]);
+  }, [user, refreshClients]);
+
+  if (loading) {
+    return (
+      <div className="app">
+        <TopBar />
+        <main className="content">
+          <p className="app-loading">Loading…</p>
+        </main>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="app">
+        <TopBar />
+        <main className="content">
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/set-password" element={<SetPasswordPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="*" element={<LoginRedirect />} />
+          </Routes>
+        </main>
+      </div>
+    );
+  }
 
   if (clients === null) {
     return (
@@ -68,6 +114,20 @@ export default function App() {
 
   return (
     <Routes>
+      <Route path="/login" element={<Navigate to="/" replace />} />
+      <Route path="/set-password" element={<SetPasswordPage />} />
+      <Route
+        path="/change-password"
+        element={
+          <div className="app">
+            <TopBar />
+            <main className="content">
+              <ChangePasswordPage />
+            </main>
+          </div>
+        }
+      />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/" element={<HomeRoute clients={clients} refreshClients={refreshClients} />} />
       <Route
         path="/client/:company/:tab?/:sub?"
@@ -97,6 +157,7 @@ interface TopBarProps {
 
 function TopBar({ clients, client, latestMonth, side, segment }: TopBarProps) {
   const navigate = useNavigate();
+  const { user, signOut } = useSession();
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const closedMonth = client ? (client.closedThrough ?? latestMonth ?? null) : null;
 
@@ -108,6 +169,25 @@ function TopBar({ clients, client, latestMonth, side, segment }: TopBarProps) {
           <div className="brand-title">Advisory Intelligence</div>
         </div>
       </div>
+      <div className="topbar-right">
+      {user && (
+        <div className="topbar-user">
+          <span className="topbar-user-name">{user.name}</span>
+          <span className="topbar-user-links">
+            <button className="link-btn" onClick={() => navigate('/change-password')}>
+              Change password
+            </button>
+            <button
+              className="link-btn"
+              onClick={() => {
+                signOut().then(() => navigate('/login'));
+              }}
+            >
+              Sign out
+            </button>
+          </span>
+        </div>
+      )}
       {client && clients && (
         <div className="topbar-client">
           <span className="topbar-client-name">{client.companyName}</span>
@@ -121,6 +201,7 @@ function TopBar({ clients, client, latestMonth, side, segment }: TopBarProps) {
           )}
         </div>
       )}
+      </div>
       {switcherOpen && client && clients && (
         <CompanySwitchModal
           clients={clients}
@@ -173,7 +254,11 @@ function HomeRoute({ clients, refreshClients }: RouteProps) {
     }
     const last = loadLastClient();
     const lastClient = last ? clients.find((c) => c.realmId === last) : undefined;
-    if (lastClient) navigate(companyPath('client', companySlug(clients, lastClient)), { replace: true });
+    if (lastClient) {
+      navigate(companyPath('client', companySlug(clients, lastClient)), { replace: true });
+      return;
+    }
+    if (clients.length === 1) navigate(companyPath('client', companySlug(clients, clients[0])), { replace: true });
   }, [clients, navigate, searchParams]);
 
   return (
@@ -203,6 +288,7 @@ function HomeRoute({ clients, refreshClients }: RouteProps) {
 
 function CompanyRoute({ side, clients, refreshClients }: RouteProps & { side: 'client' | 'advisor' }) {
   const navigate = useNavigate();
+  const role = useSession().user?.role ?? 'client';
   const params = useParams<{ company: string; tab?: string; sub?: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -278,6 +364,7 @@ function CompanyRoute({ side, clients, refreshClients }: RouteProps & { side: 'c
   );
 
   if (!client || !slug) return <Navigate to="/" replace />;
+  if (side === 'advisor' && role === 'client') return <Navigate to={companyPath('client', slug)} replace />;
   if (!tab) return <Navigate to={companyPath(side, slug, DEFAULT_SEGMENT[side])} replace />;
   // Checks has sub-routes (/checks/:check, bare /checks is the menu); other tabs have none.
   if (tab === 'checks' && params.sub && !check) {
@@ -335,6 +422,7 @@ function CompanyRoute({ side, clients, refreshClients }: RouteProps & { side: 'c
 
 function AdminRoute({ clients, refreshClients }: RouteProps) {
   const navigate = useNavigate();
+  const role = useSession().user?.role;
   const params = useParams<{ tab?: string }>();
   const [error, setError] = useState<string | null>(null);
   const tab = tabForSegment('admin', params.tab);
@@ -344,6 +432,7 @@ function AdminRoute({ clients, refreshClients }: RouteProps) {
   const backClient = (last && clients.find((c) => c.realmId === last)) ?? clients[0] ?? null;
   const backSlug = backClient ? companySlug(clients, backClient) : null;
 
+  if (role !== 'admin') return <Navigate to="/" replace />;
   if (!tab) return <Navigate to={adminPath()} replace />;
 
   return (

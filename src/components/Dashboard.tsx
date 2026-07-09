@@ -5,6 +5,7 @@ import type { AccountMap, ClientDataset } from '../types';
 import { computeMetrics } from '../lib/metrics';
 import { formatMonth } from '../lib/format';
 import { adminPath, companyPath, TAB_SEGMENTS, type CheckId, type Side } from '../lib/routes';
+import { useSession } from '../lib/session.tsx';
 import { KpiCards } from './KpiCards';
 import { MetricsTable } from './MetricsTable';
 import { Charts } from './Charts';
@@ -47,6 +48,12 @@ const SIDES: { id: Side; label: string }[] = [
  */
 export function PortalSeg({ side, slug }: { side: Side; slug: string | null }) {
   const navigate = useNavigate();
+  const role = useSession().user?.role ?? 'client';
+  // Clients only have the client portal (no switcher at all); advisors get
+  // Client/Advisor; admins get all three.
+  const visible = role === 'admin' ? SIDES : role === 'advisor' ? SIDES.slice(0, 2) : [];
+  if (visible.length === 0) return null;
+
   function go(target: Side) {
     if (target === side) return;
     if (target === 'admin') navigate(adminPath());
@@ -55,7 +62,7 @@ export function PortalSeg({ side, slug }: { side: Side; slug: string | null }) {
   }
   return (
     <div className="seg" role="group" aria-label="Portal">
-      {SIDES.map((s) => (
+      {visible.map((s) => (
         <button key={s.id} className={side === s.id ? 'active' : ''} onClick={() => go(s.id)}>
           {s.label}
         </button>

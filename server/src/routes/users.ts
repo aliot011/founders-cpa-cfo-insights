@@ -1,5 +1,8 @@
 import { Router } from 'express';
+import { baseUrl, newRawToken, sha256 } from '../auth.ts';
 import {
+  countAdmins,
+  createAuthToken,
   createUser,
   deleteUser,
   getConnection,
@@ -11,6 +14,9 @@ import {
   type UserRow,
 } from '../db.ts';
 import { ApiError } from '../errors.ts';
+
+const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const RESET_TTL_MS = 60 * 60 * 1000;
 
 export const usersRouter = Router();
 
@@ -24,8 +30,23 @@ function toApi(u: UserRow & { companies: UserCompany[] }) {
     name: u.name,
     role: u.role,
     companies: u.companies.map((c) => ({ realmId: c.realm_id, companyName: c.company_name })),
+    hasPassword: u.password_hash != null,
     createdAt: u.created_at,
   };
+}
+
+/** Mint a set-password link for a user (invite for first-time, reset after). */
+function mintLink(req: Parameters<typeof baseUrl>[0], userId: number, purpose: 'invite' | 'reset'): string {
+  const raw = newRawToken();
+  createAuthToken(userId, purpose, sha256(raw), purpose === 'invite' ? INVITE_TTL_MS : RESET_TTL_MS);
+  return `${baseUrl(req)}/set-password?token=${raw}`;
+}
+
+/** The last admin can be neither deleted nor demoted. */
+function guardLastAdmin(target: UserRow, nextRole?: UserRole): void {
+  if (target.role === 'admin' && (nextRole === undefined || nextRole !== 'admin') && countAdmins() <= 1) {
+    throw new ApiError(400, 'There must always be at least one admin.', 'bad_request');
+  }
 }
 
 /**
@@ -68,7 +89,7 @@ usersRouter.post('/', (req, res) => {
       role: role as UserRole,
       realmIds: resolveRealms(role as UserRole, realmIds),
     });
-    res.status(201).json(toApi(user));
+    res.status(201).json({ ...toApi(user), inviteUrl: mintLink(req, user.id, 'invite') });
   } catch (err) {
     if ((err as { code?: string }).code?.startsWith('SQLITE_CONSTRAINT')) {
       throw new ApiError(400, `A user with the email ${email} already exists.`, 'bad_request');
@@ -94,6 +115,7 @@ usersRouter.put('/:id', (req, res) => {
   if ('role' in body && !ROLES.has(role)) {
     throw new ApiError(400, "Role must be 'admin', 'advisor', or 'client'.", 'bad_request');
   }
+  if ('role' in body) guardLastAdmin(existing, role);
   if ('role' in body || 'realmIds' in body) {
     fields.role = role;
     fields.realmIds = resolveRealms(
@@ -106,7 +128,24 @@ usersRouter.put('/:id', (req, res) => {
 
 usersRouter.delete('/:id', (req, res) => {
   const id = Number(req.params.id);
-  if (!getUser(id)) throw new ApiError(404, `No user ${req.params.id}`, 'not_found');
+  const target = getUser(id);
+  if (!target) throw new ApiError(404, `No user ${req.params.id}`, 'not_found');
+  if (req.user && req.user.id === id) throw new ApiError(400, 'You cannot remove your own account.', 'bad_request');
+  guardLastAdmin(target);
   deleteUser(id);
   res.json({ ok: true });
+});
+
+/** Fresh invite link for a user who has never set a password. */
+usersRouter.post('/:id/invite', (req, res) => {
+  const user = getUser(Number(req.params.id));
+  if (!user) throw new ApiError(404, `No user ${req.params.id}`, 'not_found');
+  res.json({ url: mintLink(req, user.id, user.password_hash ? 'reset' : 'invite') });
+});
+
+/** One-hour password-reset link (manual delivery until a mailer exists). */
+usersRouter.post('/:id/reset-link', (req, res) => {
+  const user = getUser(Number(req.params.id));
+  if (!user) throw new ApiError(404, `No user ${req.params.id}`, 'not_found');
+  res.json({ url: mintLink(req, user.id, 'reset') });
 });

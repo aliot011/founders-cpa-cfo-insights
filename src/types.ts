@@ -65,7 +65,7 @@ export type AccountingMethod = 'Accrual' | 'Cash';
 /** Access roles. Admins are advisors who can also manage users and companies. */
 export type UserRole = 'admin' | 'advisor' | 'client';
 
-/** An app user (the directory the future sign-in will authenticate against). */
+/** An app user (the directory sign-in authenticates against). */
 export interface AppUser {
   id: number;
   email: string;
@@ -73,7 +73,19 @@ export interface AppUser {
   role: UserRole;
   /** For client users: the companies they can see. Empty for admins/advisors (they see all). */
   companies: { realmId: string; companyName: string }[];
+  /** False until the user follows their invite link (shown as Invited). */
+  hasPassword: boolean;
   createdAt: string;
+}
+
+/** The signed-in user, as served by /api/session/me. */
+export interface SessionUser {
+  id: number;
+  email: string;
+  name: string;
+  role: UserRole;
+  /** Companies this user can open (all of them for admins/advisors). */
+  companies: { realmId: string; companyName: string }[];
 }
 
 /** One connected QuickBooks company, as listed by the API. */

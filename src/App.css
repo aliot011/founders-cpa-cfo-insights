@@ -1189,3 +1189,117 @@ details.collapse > summary::-webkit-details-marker {
   color: var(--ink);
   border-bottom: 1px solid var(--line-strong);
 }
+
+/* ---- Auth pages ---------------------------------------------------------- */
+.auth-wrap {
+  max-width: 420px;
+  margin: 64px auto;
+}
+.auth-card {
+  padding: 28px;
+}
+.auth-card h1 {
+  font-size: 24px;
+  margin-bottom: 18px;
+}
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.auth-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.auth-form input {
+  font-family: inherit;
+  font-size: 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+}
+.auth-form input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.auth-form .btn {
+  padding: 10px 14px;
+  font-size: 14px;
+}
+.auth-error {
+  margin: 0;
+}
+.auth-copy {
+  font-size: 14px;
+  color: var(--ink-2);
+  line-height: 1.6;
+  margin-bottom: 14px;
+}
+.auth-actions {
+  display: flex;
+  gap: 10px;
+}
+.pw-rules {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 12.5px;
+  color: var(--muted);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.pw-rules li.ok {
+  color: var(--pos);
+}
+.pw-rules li.pw-note {
+  margin-top: 3px;
+  font-style: italic;
+}
+
+/* Topbar user chip. */
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+}
+.topbar-user {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+}
+.topbar-user-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+.topbar-user-links {
+  display: flex;
+  gap: 10px;
+}
+
+/* Invite-link box on the Users page. */
+.invite-box {
+  margin-top: 14px;
+  padding: 12px 14px;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.invite-box input {
+  font-family: inherit;
+  font-size: 12px;
+  padding: 7px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: var(--surface);
+  width: 100%;
+}

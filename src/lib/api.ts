@@ -4,12 +4,20 @@ import type {
   AppUser,
   ClientDataset,
   ClientSummary,
+  SessionUser,
   SyncLogEntry,
   SyncResult,
   UserRole,
 } from '../types.ts';
 
-export type ApiErrorCode = 'needs_reauth' | 'not_found' | 'qbo_error' | 'sync_in_progress' | 'bad_request';
+export type ApiErrorCode =
+  | 'needs_reauth'
+  | 'not_found'
+  | 'qbo_error'
+  | 'sync_in_progress'
+  | 'bad_request'
+  | 'unauthorized'
+  | 'forbidden';
 
 export class ApiError extends Error {
   status: number;
@@ -70,7 +78,32 @@ export const api = {
   listUsers: () => request<AppUser[]>('/users'),
 
   createUser: (user: { email: string; name: string; role: UserRole; realmIds?: string[] }) =>
-    request<AppUser>('/users', { method: 'POST', body: JSON.stringify(user) }),
+    request<AppUser & { inviteUrl: string }>('/users', { method: 'POST', body: JSON.stringify(user) }),
+
+  inviteLink: (id: number) => request<{ url: string }>(`/users/${id}/invite`, { method: 'POST' }),
+
+  resetLink: (id: number) => request<{ url: string }>(`/users/${id}/reset-link`, { method: 'POST' }),
+
+  me: () => request<SessionUser>('/session/me'),
+
+  login: (email: string, password: string) =>
+    request<SessionUser>('/session/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
+
+  logout: () => request<{ ok: true }>('/session/logout', { method: 'POST' }),
+
+  tokenInfo: (token: string) =>
+    request<{ valid: boolean; purpose?: 'invite' | 'reset'; email?: string; name?: string }>(
+      `/session/token-info?token=${encodeURIComponent(token)}`,
+    ),
+
+  setPassword: (token: string, password: string) =>
+    request<SessionUser>('/session/set-password', { method: 'POST', body: JSON.stringify({ token, password }) }),
+
+  changePassword: (currentPassword: string, newPassword: string) =>
+    request<{ ok: true }>('/session/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    }),
 
   updateUser: (id: number, fields: { name?: string; role?: UserRole; realmIds?: string[] }) =>
     request<AppUser>(`/users/${id}`, { method: 'PUT', body: JSON.stringify(fields) }),

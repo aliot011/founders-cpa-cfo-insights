@@ -72,6 +72,22 @@ CREATE TABLE IF NOT EXISTS user_companies (
   realm_id TEXT NOT NULL REFERENCES connections(realm_id) ON DELETE CASCADE,
   PRIMARY KEY (user_id, realm_id)
 );
+-- Server-side sessions; the cookie carries the raw token, we store its hash.
+CREATE TABLE IF NOT EXISTS sessions (
+  token_hash TEXT PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at TEXT NOT NULL,
+  expires_at TEXT NOT NULL
+);
+-- Single-use invite / password-reset links (hash at rest).
+CREATE TABLE IF NOT EXISTS auth_tokens (
+  token_hash TEXT PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  purpose TEXT NOT NULL CHECK (purpose IN ('invite', 'reset')),
+  created_at TEXT NOT NULL,
+  expires_at TEXT NOT NULL,
+  used_at TEXT
+);
 `);
 
 // Migrate databases created before newer columns existed.
@@ -82,6 +98,10 @@ CREATE TABLE IF NOT EXISTS user_companies (
   }
   if (!cols.some((c) => c.name === 'closed_through')) {
     db.exec('ALTER TABLE connections ADD COLUMN closed_through TEXT');
+  }
+  const uCols2 = db.prepare('PRAGMA table_info(users)').all() as { name: string }[];
+  if (!uCols2.some((c) => c.name === 'password_hash')) {
+    db.exec('ALTER TABLE users ADD COLUMN password_hash TEXT');
   }
   const dsCols = db.prepare('PRAGMA table_info(datasets)').all() as { name: string }[];
   if (!dsCols.some((c) => c.name === 'opening_balances_json')) {
@@ -237,6 +257,7 @@ export interface UserRow {
   email: string;
   name: string;
   role: UserRole;
+  password_hash: string | null;
   created_at: string;
 }
 
@@ -302,6 +323,111 @@ export function updateUser(
 
 export function deleteUser(id: number): void {
   db.prepare('DELETE FROM users WHERE id = ?').run(id);
+}
+
+export function getUserByEmail(email: string): UserRow | undefined {
+  return db.prepare('SELECT * FROM users WHERE email = ? COLLATE NOCASE').get(email) as UserRow | undefined;
+}
+
+export function countAdmins(): number {
+  return (db.prepare("SELECT COUNT(*) AS n FROM users WHERE role = 'admin'").get() as { n: number }).n;
+}
+
+export function anyUserHasPassword(): boolean {
+  return db.prepare('SELECT 1 FROM users WHERE password_hash IS NOT NULL LIMIT 1').get() !== undefined;
+}
+
+/** Set a user's password and revoke every existing session for them. */
+export function setUserPassword(userId: number, passwordHash: string): void {
+  db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(passwordHash, userId);
+  db.prepare('DELETE FROM sessions WHERE user_id = ?').run(userId);
+}
+
+// ---- Sessions -----------------------------------------------------------
+
+const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+/** Sliding renewal: extend when less than half the TTL remains. */
+const SESSION_RENEW_BELOW_MS = SESSION_TTL_MS / 2;
+
+export interface SessionUserRow {
+  id: number;
+  email: string;
+  name: string;
+  role: UserRole;
+}
+
+export function createSession(userId: number, tokenHash: string): void {
+  const now = Date.now();
+  db.prepare('INSERT INTO sessions (token_hash, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)').run(
+    tokenHash,
+    userId,
+    new Date(now).toISOString(),
+    new Date(now + SESSION_TTL_MS).toISOString(),
+  );
+}
+
+export function getSessionUser(tokenHash: string): SessionUserRow | null {
+  const row = db
+    .prepare(
+      `SELECT s.expires_at, u.id, u.email, u.name, u.role FROM sessions s
+       JOIN users u ON u.id = s.user_id WHERE s.token_hash = ?`,
+    )
+    .get(tokenHash) as (SessionUserRow & { expires_at: string }) | undefined;
+  if (!row) return null;
+  const expiresAt = new Date(row.expires_at).getTime();
+  const now = Date.now();
+  if (expiresAt <= now) {
+    db.prepare('DELETE FROM sessions WHERE token_hash = ?').run(tokenHash);
+    return null;
+  }
+  if (expiresAt - now < SESSION_RENEW_BELOW_MS) {
+    db.prepare('UPDATE sessions SET expires_at = ? WHERE token_hash = ?').run(
+      new Date(now + SESSION_TTL_MS).toISOString(),
+      tokenHash,
+    );
+  }
+  return { id: row.id, email: row.email, name: row.name, role: row.role };
+}
+
+export function deleteSession(tokenHash: string): void {
+  db.prepare('DELETE FROM sessions WHERE token_hash = ?').run(tokenHash);
+}
+
+// ---- Invite / reset tokens ------------------------------------------------
+
+export function createAuthToken(userId: number, purpose: 'invite' | 'reset', tokenHash: string, ttlMs: number): void {
+  const now = Date.now();
+  db.prepare(
+    'INSERT INTO auth_tokens (token_hash, user_id, purpose, created_at, expires_at) VALUES (?, ?, ?, ?, ?)',
+  ).run(tokenHash, userId, purpose, new Date(now).toISOString(), new Date(now + ttlMs).toISOString());
+}
+
+export interface AuthTokenRow {
+  token_hash: string;
+  user_id: number;
+  purpose: 'invite' | 'reset';
+  expires_at: string;
+  used_at: string | null;
+}
+
+/** A valid (unexpired, unused) token, or null. Read-only. */
+export function peekAuthToken(tokenHash: string): AuthTokenRow | null {
+  const row = db.prepare('SELECT * FROM auth_tokens WHERE token_hash = ?').get(tokenHash) as AuthTokenRow | undefined;
+  if (!row || row.used_at || new Date(row.expires_at).getTime() <= Date.now()) return null;
+  return row;
+}
+
+/** Mark a token used; returns false if it was invalid/already used. */
+export function consumeAuthToken(tokenHash: string): boolean {
+  const row = peekAuthToken(tokenHash);
+  if (!row) return false;
+  db.prepare('UPDATE auth_tokens SET used_at = ? WHERE token_hash = ?').run(new Date().toISOString(), tokenHash);
+  return true;
+}
+
+export function getUserCompanyRealms(userId: number): Set<string> {
+  const rows = db.prepare('SELECT realm_id FROM user_companies WHERE user_id = ?').all(userId) as { realm_id: string }[];
+  return new Set(rows.map((r) => r.realm_id));
 }
 
 export function deleteConnection(realmId: string): void {

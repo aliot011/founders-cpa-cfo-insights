@@ -23,3 +23,5 @@ services:
         sync: false
       - key: QBO_CLIENT_SECRET
         sync: false
+      - key: BOOTSTRAP_ADMIN_EMAIL
+        sync: false

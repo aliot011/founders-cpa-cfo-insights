@@ -10,7 +10,7 @@
     "build": "tsc -b && vite build",
     "start": "NODE_ENV=production tsx server/src/index.ts",
     "lint": "oxlint",
-    "test": "tsx --test server/test/*.test.ts",
+    "test": "DATA_DIR=$(mktemp -d) tsx --test server/test/*.test.ts",
     "preview": "vite preview"
   },
   "dependencies": {
