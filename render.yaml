@@ -23,5 +23,3 @@ services:
         sync: false
       - key: QBO_CLIENT_SECRET
         sync: false
-      - key: BASIC_AUTH_PASSWORD
-        generateValue: true
