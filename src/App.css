@@ -47,12 +47,12 @@
   color: var(--muted);
 }
 
-/* Stacked client block on the right of the topbar. */
-.topbar-client {
+/* Company context under the brand title. */
+.brand-client {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 3px;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 3px;
 }
 .topbar-client-name {
   font-size: 14px;
@@ -1261,26 +1261,6 @@ details.collapse > summary::-webkit-details-marker {
   font-style: italic;
 }
 
-/* Topbar user chip. */
-.topbar-right {
-  display: flex;
-  align-items: center;
-  gap: 22px;
-}
-.topbar-user {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 3px;
-}
-.topbar-user-name {
-  font-size: 13px;
-  font-weight: 600;
-}
-.topbar-user-links {
-  display: flex;
-  gap: 10px;
-}
 
 /* Invite-link box on the Users page. */
 .invite-box {

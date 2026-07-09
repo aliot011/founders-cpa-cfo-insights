@@ -167,41 +167,31 @@ function TopBar({ clients, client, latestMonth, side, segment }: TopBarProps) {
         <img className="brand-mark" src={logo} alt="Startup Accounting Advisors" />
         <div>
           <div className="brand-title">Advisory Intelligence</div>
-        </div>
-      </div>
-      <div className="topbar-right">
-      {user && (
-        <div className="topbar-user">
-          <span className="topbar-user-name">{user.name}</span>
-          <span className="topbar-user-links">
-            <button className="link-btn" onClick={() => navigate('/change-password')}>
-              Change password
-            </button>
-            <button
-              className="link-btn"
-              onClick={() => {
-                signOut().then(() => navigate('/login'));
-              }}
-            >
-              Sign out
-            </button>
-          </span>
-        </div>
-      )}
-      {client && clients && (
-        <div className="topbar-client">
-          <span className="topbar-client-name">{client.companyName}</span>
-          <span className="topbar-closed">
-            {closedMonth ? `Closed through ${formatMonth(closedMonth)}` : 'Not synced yet'}
-          </span>
-          {clients.length > 1 && (
-            <button className="link-btn" onClick={() => setSwitcherOpen(true)}>
-              Switch company
-            </button>
+          {client && clients && (
+            <div className="brand-client">
+              <span className="topbar-client-name">{client.companyName}</span>
+              <span className="topbar-closed">
+                {closedMonth ? `Closed through ${formatMonth(closedMonth)}` : 'Not synced yet'}
+              </span>
+              {clients.length > 1 && (
+                <button className="link-btn" onClick={() => setSwitcherOpen(true)}>
+                  Switch company
+                </button>
+              )}
+            </div>
           )}
         </div>
-      )}
       </div>
+      {user && (
+        <button
+          className="link-btn"
+          onClick={() => {
+            signOut().then(() => navigate('/login'));
+          }}
+        >
+          Log out
+        </button>
+      )}
       {switcherOpen && client && clients && (
         <CompanySwitchModal
           clients={clients}
