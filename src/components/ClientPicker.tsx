@@ -1,3 +1,4 @@
+import { useSession } from '../lib/session.tsx';
 import type { ClientSummary } from '../types.ts';
 
 interface Props {
@@ -8,12 +9,16 @@ interface Props {
 }
 
 export function ClientPicker({ clients, connectError, onSelect, onDisconnect }: Props) {
+  // Admins manage connections here; everyone else just picks a company.
+  const isAdmin = useSession().user?.role === 'admin';
+
   return (
     <div className="upload-wrap">
-      <h1>Advisory Intelligence</h1>
+      <h1>{isAdmin ? 'Advisory Intelligence' : 'Select a company'}</h1>
       <p className="upload-lede">
-        Connect each client&rsquo;s QuickBooks Online company once, then pull their General Ledger on demand.
-        Pick a client below to open their dashboard.
+        {isAdmin
+          ? 'Connect each client\u2019s QuickBooks Online company once, then pull their General Ledger on demand. Pick a client below to open their dashboard.'
+          : 'Choose the company you want to view.'}
       </p>
 
       {connectError && <div className="upload-error">QuickBooks connection failed: {connectError}</div>}
@@ -32,34 +37,39 @@ export function ClientPicker({ clients, connectError, onSelect, onDisconnect }: 
                       : 'Never synced'}
                 </span>
               </button>
-              {c.status === 'needs_reauth' && (
+              {isAdmin && c.status === 'needs_reauth' && (
                 <a className="btn btn-xs" href="/api/auth/connect">
                   Reconnect
                 </a>
               )}
-              <button
-                className="btn btn-ghost btn-xs"
-                onClick={() => {
-                  if (confirm(`Disconnect ${c.companyName} from QuickBooks? Its synced data will be removed.`)) {
-                    onDisconnect(c);
-                  }
-                }}
-              >
-                Disconnect
-              </button>
+              {isAdmin && (
+                <button
+                  className="btn btn-ghost btn-xs"
+                  onClick={() => {
+                    if (confirm(`Disconnect ${c.companyName} from QuickBooks? Its synced data will be removed.`)) {
+                      onDisconnect(c);
+                    }
+                  }}
+                >
+                  Disconnect
+                </button>
+              )}
             </div>
           ))}
         </div>
       )}
 
-      <a className="btn btn-primary connect-btn" href="/api/auth/connect">
-        {clients.length > 0 ? 'Connect another client' : 'Connect a client to QuickBooks'}
-      </a>
-
-      <p className="upload-note">
-        Connecting opens Intuit&rsquo;s sign-in page. Choose the client&rsquo;s company and approve access; you&rsquo;ll
-        be brought straight back here.
-      </p>
+      {isAdmin && (
+        <>
+          <a className="btn btn-primary connect-btn" href="/api/auth/connect">
+            {clients.length > 0 ? 'Connect another client' : 'Connect a client to QuickBooks'}
+          </a>
+          <p className="upload-note">
+            Connecting opens Intuit&rsquo;s sign-in page. Choose the client&rsquo;s company and approve access;
+            you&rsquo;ll be brought straight back here.
+          </p>
+        </>
+      )}
     </div>
   );
 }

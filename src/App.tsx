@@ -250,12 +250,7 @@ function HomeRoute({ clients, refreshClients }: RouteProps) {
         return;
       }
     }
-    const last = loadLastClient();
-    const lastClient = last ? clients.find((c) => c.realmId === last) : undefined;
-    if (lastClient) {
-      navigate(companyPath('client', companySlug(clients, lastClient)), { replace: true });
-      return;
-    }
+    // Multi-company users pick a company here; single-company users skip ahead.
     if (clients.length === 1) navigate(companyPath('client', companySlug(clients, clients[0])), { replace: true });
   }, [clients, navigate, searchParams]);
 
