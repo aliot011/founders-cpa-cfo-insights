@@ -30,8 +30,18 @@ function slugFor(transactionType: string | undefined): string | null {
   return TYPE_SLUGS[t] ?? (t.includes('journal') ? 'journal' : t.includes('expense') ? 'expense' : null);
 }
 
+/** Host for the switchCompany endpoint (proven working). */
 function hostFor(environment: 'sandbox' | 'production'): string {
   return environment === 'production' ? 'app.qbo.intuit.com' : 'app.sandbox.qbo.intuit.com';
+}
+
+/**
+ * Host QBO actually settles on for app pages. Steering the tab here avoids a
+ * cross-host redirect that can drop the txnId query param when it races
+ * QBO's post-switch bootstrapping (observed live: app.sandbox -> sandbox).
+ */
+function pageHostFor(environment: 'sandbox' | 'production'): string {
+  return environment === 'production' ? 'app.qbo.intuit.com' : 'sandbox.qbo.intuit.com';
 }
 
 /**
@@ -52,7 +62,7 @@ export function qboTxnUrls(
   if (!slug) return null;
   return {
     switchUrl: qboSwitchUrl(environment, realmId),
-    txnUrl: `https://${hostFor(environment)}/app/${slug}?txnId=${encodeURIComponent(entry.txnId)}`,
+    txnUrl: `https://${pageHostFor(environment)}/app/${slug}?txnId=${encodeURIComponent(entry.txnId)}`,
   };
 }
 
@@ -66,11 +76,11 @@ export function qboSwitchUrl(environment: 'sandbox' | 'production', realmId: str
 
 /** A vendor's profile page in QBO (same company-switch caveats as transactions). */
 export function qboVendorUrl(environment: 'sandbox' | 'production', vendorId: string): string {
-  return `https://${hostFor(environment)}/app/vendordetail?nameId=${encodeURIComponent(vendorId)}`;
+  return `https://${pageHostFor(environment)}/app/vendordetail?nameId=${encodeURIComponent(vendorId)}`;
 }
 
 /** How long the switchCompany hop gets before we steer the tab to the target. */
-export const QBO_SWITCH_DELAY_MS = 5000;
+export const QBO_SWITCH_DELAY_MS = 7000;
 
 /**
  * Open a QBO page company-safely: the tab starts on switchCompany (session
